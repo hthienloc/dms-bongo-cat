@@ -213,11 +213,7 @@ PluginComponent {
                         Behavior on color { ColorAnimation { duration: 300 } }
                         
                         // Subtle bounce animation when typing
-                        NumberAnimation on scale {
-                            id: pulseAnim
-                            from: 1.0; to: 1.1; duration: 100
-                            running: !root.isWaiting && root.catState !== 0
-                        }
+
                     }
 
                 }
