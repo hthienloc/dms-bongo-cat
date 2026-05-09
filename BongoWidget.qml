@@ -160,7 +160,7 @@ PluginComponent {
                 anchors.centerIn: parent
                 font.family: bongoFont.name
                 font.pixelSize: 24 * root.catSize
-                color: root.forceSleep ? Theme.onSurfaceVariant : ((root.activeColor && !isWaiting) ? Theme.primary : Theme.onSurface)
+                color: root.forceSleep ? Theme.surfaceVariantText : ((root.activeColor && !isWaiting) ? Theme.primary : Theme.surfaceText)
                 opacity: root.forceSleep ? 0.5 : 1.0
                 text: root.forceSleep ? sleepGlyph : (isWaiting ? sleepGlyph : (isBlinking ? blinkGlyph : glyphMap[catState]))
             }
@@ -239,7 +239,7 @@ PluginComponent {
                         width: parent.width
                         height: 48
                         spacing: Theme.spacingM
-                        DankIcon { name: "aspect_ratio"; size: 20; color: Theme.onSurface; anchors.verticalCenter: parent.verticalCenter }
+                        DankIcon { name: "aspect_ratio"; size: 20; color: Theme.onSurfaceVariant; anchors.verticalCenter: parent.verticalCenter }
                         DankSlider {
                             id: sizeSlider
                             width: parent.width - 40
@@ -256,7 +256,7 @@ PluginComponent {
                         width: parent.width
                         height: 48
                         spacing: Theme.spacingM
-                        DankIcon { name: "timer"; size: 20; color: Theme.onSurface; anchors.verticalCenter: parent.verticalCenter }
+                        DankIcon { name: "timer"; size: 20; color: Theme.onSurfaceVariant; anchors.verticalCenter: parent.verticalCenter }
                         DankSlider {
                             width: parent.width - 40
                             value: root.idleTimeout
@@ -279,7 +279,7 @@ PluginComponent {
                             DankIcon {
                                 name: root.enableBlinking ? "visibility" : "visibility_off"
                                 size: 22
-                                color: root.enableBlinking ? Theme.primary : Theme.onSurface
+                                color: root.enableBlinking ? Theme.primary : Theme.onSurfaceVariant
                                 MouseArea {
                                     anchors.fill: parent
                                     cursorShape: Qt.PointingHandCursor
@@ -300,7 +300,7 @@ PluginComponent {
                             DankIcon {
                                 name: "palette"
                                 size: 22
-                                color: root.activeColor ? Theme.primary : Theme.onSurface
+                                color: root.activeColor ? Theme.primary : Theme.onSurfaceVariant
                                 MouseArea {
                                     anchors.fill: parent
                                     cursorShape: Qt.PointingHandCursor
