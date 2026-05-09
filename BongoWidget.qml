@@ -160,7 +160,6 @@ PluginComponent {
                 anchors.centerIn: parent
                 font.family: bongoFont.name
                 font.pixelSize: 24 * root.catSize
-                font.letterSpacing: -1
                 color: root.forceSleep ? Theme.surfaceVariantText : ((root.activeColor && !isWaiting) ? Theme.primary : Theme.surfaceText)
                 opacity: root.forceSleep ? 0.5 : 1.0
                 text: root.forceSleep ? sleepGlyph : (isWaiting ? sleepGlyph : (isBlinking ? blinkGlyph : glyphMap[catState]))
