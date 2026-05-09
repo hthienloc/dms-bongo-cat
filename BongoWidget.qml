@@ -160,7 +160,7 @@ PluginComponent {
                 anchors.centerIn: parent
                 font.family: bongoFont.name
                 font.pixelSize: 24 * root.catSize
-                color: root.forceSleep ? Theme.surfaceVariantText : ((root.activeColor && !isWaiting) ? Theme.primary : Theme.surfaceText)
+                color: root.forceSleep ? Theme.onSurfaceVariant : ((root.activeColor && !isWaiting) ? Theme.primary : Theme.onSurface)
                 opacity: root.forceSleep ? 0.5 : 1.0
                 text: root.forceSleep ? sleepGlyph : (isWaiting ? sleepGlyph : (isBlinking ? blinkGlyph : glyphMap[catState]))
             }
@@ -205,7 +205,7 @@ PluginComponent {
                         anchors.centerIn: parent
                         font.family: bongoFont.name
                         font.pixelSize: 80
-                        color: root.isWaiting ? Theme.surfaceText : Theme.primary
+                        color: root.isWaiting ? Theme.onSurface : Theme.onPrimaryContainer
                         text: root.forceSleep ? sleepGlyph : (isWaiting ? sleepGlyph : (isBlinking ? blinkGlyph : glyphMap[catState]))
                         
                         Behavior on color { ColorAnimation { duration: 300 } }
@@ -226,14 +226,14 @@ PluginComponent {
                         width: 80
                         height: 24
                         radius: 12
-                        color: root.isWaiting ? Theme.surfaceContainerHighest : Theme.primary
+                        color: root.isWaiting ? Theme.onSurfaceVariant : Theme.primary
                         
                         StyledText {
                             anchors.centerIn: parent
                             text: root.isWaiting ? "SLEEPING" : "ACTIVE"
                             font.pixelSize: 10
                             font.bold: true
-                            color: root.isWaiting ? Theme.surfaceVariantText : Theme.onPrimary
+                            color: root.isWaiting ? Theme.surface : Theme.onPrimary
                         }
                     }
                 }
@@ -257,7 +257,7 @@ PluginComponent {
                         width: parent.width
                         height: 48
                         spacing: Theme.spacingM
-                        DankIcon { name: "aspect_ratio"; size: 20; color: Theme.onSurfaceVariant; anchors.verticalCenter: parent.verticalCenter }
+                        DankIcon { name: "aspect_ratio"; size: 20; color: Theme.onSurface; anchors.verticalCenter: parent.verticalCenter }
                         DankSlider {
                             id: sizeSlider
                             width: parent.width - 40
@@ -274,7 +274,7 @@ PluginComponent {
                         width: parent.width
                         height: 48
                         spacing: Theme.spacingM
-                        DankIcon { name: "timer"; size: 20; color: Theme.onSurfaceVariant; anchors.verticalCenter: parent.verticalCenter }
+                        DankIcon { name: "timer"; size: 20; color: Theme.onSurface; anchors.verticalCenter: parent.verticalCenter }
                         DankSlider {
                             width: parent.width - 40
                             value: root.idleTimeout
@@ -297,7 +297,7 @@ PluginComponent {
                             DankIcon {
                                 name: root.enableBlinking ? "visibility" : "visibility_off"
                                 size: 22
-                                color: root.enableBlinking ? Theme.primary : Theme.onSurfaceVariant
+                                color: root.enableBlinking ? Theme.primary : Theme.onSurface
                                 MouseArea {
                                     anchors.fill: parent
                                     cursorShape: Qt.PointingHandCursor
@@ -318,7 +318,7 @@ PluginComponent {
                             DankIcon {
                                 name: "palette"
                                 size: 22
-                                color: root.activeColor ? Theme.primary : Theme.onSurfaceVariant
+                                color: root.activeColor ? Theme.primary : Theme.onSurface
                                 MouseArea {
                                     anchors.fill: parent
                                     cursorShape: Qt.PointingHandCursor
@@ -345,11 +345,11 @@ PluginComponent {
                     Row {
                         anchors.centerIn: parent
                         spacing: Theme.spacingS
-                        DankIcon { name: "info"; size: 16; color: Theme.surfaceVariantText }
+                        DankIcon { name: "info"; size: 16; color: Theme.onSurfaceVariant }
                         StyledText {
                             text: "Right-click pill to toggle sleep mode"
                             font.pixelSize: 10
-                            color: Theme.surfaceVariantText
+                            color: Theme.onSurfaceVariant
                         }
                     }
                 }
