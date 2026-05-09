@@ -188,7 +188,7 @@ PluginComponent {
                     width: parent.width
                     height: 140
                     radius: Theme.cornerRadius
-                    color: root.isWaiting ? Theme.surfaceContainerHigh : Theme.primaryContainer
+                    color: root.isWaiting ? Theme.surface : Theme.primaryContainer
                     clip: true
                     
                     // Gradient overlay
@@ -205,7 +205,7 @@ PluginComponent {
                         anchors.centerIn: parent
                         font.family: bongoFont.name
                         font.pixelSize: 80
-                        color: root.isWaiting ? Theme.onSurface : Theme.onPrimaryContainer
+                        color: root.isWaiting ? Theme.primary : Theme.onPrimaryContainer
                         text: root.forceSleep ? sleepGlyph : (isWaiting ? sleepGlyph : (isBlinking ? blinkGlyph : glyphMap[catState]))
                         
                         Behavior on color { ColorAnimation { duration: 300 } }
@@ -327,11 +327,11 @@ PluginComponent {
                     Row {
                         anchors.centerIn: parent
                         spacing: Theme.spacingS
-                        DankIcon { name: "info"; size: 16; color: Theme.onSurfaceVariant }
+                        DankIcon { name: "info"; size: 16; color: Theme.onSurface }
                         StyledText {
                             text: "Right-click pill to toggle sleep mode"
                             font.pixelSize: 10
-                            color: Theme.onSurfaceVariant
+                            color: Theme.onSurface
                         }
                     }
                 }
