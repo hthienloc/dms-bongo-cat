@@ -239,12 +239,25 @@ PluginComponent {
                         DankIcon { name: "aspect_ratio"; size: 20; color: Theme.primary; anchors.verticalCenter: parent.verticalCenter }
                         DankSlider {
                             id: sizeSlider
-                            width: parent.width - 40
+                            width: parent.width - 80
                             value: root.catSize * 100
                             minimum: 50; maximum: 200
                             centerMinimum: false; unit: "%"; showValue: true
                             onSliderValueChanged: v => root.saveSetting("catSizePercent", v)
                             anchors.verticalCenter: parent.verticalCenter
+                        }
+                        DankIcon {
+                            name: "restore"
+                            size: 18
+                            color: Theme.primary
+                            opacity: (root.catSize * 100) !== 100 ? 1.0 : 0.3
+                            anchors.verticalCenter: parent.verticalCenter
+                            MouseArea {
+                                anchors.fill: parent
+                                enabled: (root.catSize * 100) !== 100
+                                cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                onClicked: root.saveSetting("catSizePercent", 100)
+                            }
                         }
                     }
 
@@ -255,12 +268,25 @@ PluginComponent {
                         spacing: Theme.spacingM
                         DankIcon { name: "timer"; size: 20; color: Theme.primary; anchors.verticalCenter: parent.verticalCenter }
                         DankSlider {
-                            width: parent.width - 40
+                            width: parent.width - 80
                             value: root.idleTimeout
                             minimum: 100; maximum: 1000
                             centerMinimum: false; unit: "ms"; showValue: true
                             onSliderValueChanged: v => root.saveSetting("idleTimeout", v)
                             anchors.verticalCenter: parent.verticalCenter
+                        }
+                        DankIcon {
+                            name: "restore"
+                            size: 18
+                            color: Theme.primary
+                            opacity: root.idleTimeout !== 250 ? 1.0 : 0.3
+                            anchors.verticalCenter: parent.verticalCenter
+                            MouseArea {
+                                anchors.fill: parent
+                                enabled: root.idleTimeout !== 250
+                                cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                onClicked: root.saveSetting("idleTimeout", 250)
+                            }
                         }
                     }
 
