@@ -279,7 +279,8 @@ PluginComponent {
                             DankIcon {
                                 name: root.enableBlinking ? "visibility" : "visibility_off"
                                 size: 22
-                                color: root.enableBlinking ? Theme.primary : Theme.primary
+                                color: root.enableBlinking ? Theme.primary : Theme.onSurface
+                                opacity: root.enableBlinking ? 1.0 : 0.4
                                 MouseArea {
                                     anchors.fill: parent
                                     cursorShape: Qt.PointingHandCursor
@@ -300,7 +301,8 @@ PluginComponent {
                             DankIcon {
                                 name: "palette"
                                 size: 22
-                                color: root.activeColor ? Theme.primary : Theme.primary
+                                color: root.activeColor ? Theme.primary : Theme.onSurface
+                                opacity: root.activeColor ? 1.0 : 0.4
                                 MouseArea {
                                     anchors.fill: parent
                                     cursorShape: Qt.PointingHandCursor
