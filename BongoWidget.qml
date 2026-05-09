@@ -279,7 +279,7 @@ PluginComponent {
                             DankIcon {
                                 name: root.enableBlinking ? "visibility" : "visibility_off"
                                 size: 22
-                                color: root.enableBlinking ? Theme.primary : Theme.onSurface
+                                color: root.enableBlinking ? Theme.primary : Theme.surfaceText
                                 opacity: root.enableBlinking ? 1.0 : 0.4
                                 MouseArea {
                                     anchors.fill: parent
@@ -301,7 +301,7 @@ PluginComponent {
                             DankIcon {
                                 name: "palette"
                                 size: 22
-                                color: root.activeColor ? Theme.primary : Theme.onSurface
+                                color: root.activeColor ? Theme.primary : Theme.surfaceText
                                 opacity: root.activeColor ? 1.0 : 0.4
                                 MouseArea {
                                     anchors.fill: parent
