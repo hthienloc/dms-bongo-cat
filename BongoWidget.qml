@@ -329,11 +329,11 @@ PluginComponent {
                     Row {
                         anchors.centerIn: parent
                         spacing: Theme.spacingS
-                        DankIcon { name: "info"; size: 16; color: "#ffffff" }
+                        DankIcon { name: "info"; size: 16; color: Theme.surfaceText }
                         StyledText {
                             text: "Right-click pill to toggle sleep mode"
                             font.pixelSize: 10
-                            color: "#ffffff"
+                            color: Theme.surfaceText
                         }
                     }
                 }
