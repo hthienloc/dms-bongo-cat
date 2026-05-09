@@ -249,63 +249,47 @@ PluginComponent {
 
                 Row {
                     width: parent.width
-                    height: 40
-                    StyledText {
-                        text: "Blink"
-                        font.pixelSize: Theme.fontSizeSmall
-                        color: Theme.surfaceText
-                        width: 50
+                    height: 36
+                    spacing: Theme.spacingM
+                    DankIcon {
+                        name: root.enableBlinking ? "check_box" : "check_box_outline_blank"
+                        size: 24
+                        color: root.enableBlinking ? Theme.primary : Theme.surfaceVariantText
                         anchors.verticalCenter: parent.verticalCenter
-                    }
-                    StyledRect {
-                        width: 32
-                        height: 32
-                        radius: 16
-                        color: root.enableBlinking ? Theme.primary : Theme.surfaceContainerHigh
-                        border.width: root.enableBlinking ? 0 : 2
-                        border.color: Theme.primary
-                        DankIcon {
-                            name: root.enableBlinking ? "visibility" : "visibility_off"
-                            size: 18
-                            color: root.enableBlinking ? Theme.onPrimary : Theme.primary
-                            anchors.centerIn: parent
-                        }
                         MouseArea {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
                             onClicked: root.saveSetting("enableBlinking", !root.enableBlinking)
                         }
                     }
+                    StyledText {
+                        text: "Blink"
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.surfaceText
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
                 }
 
                 Row {
                     width: parent.width
-                    height: 40
-                    StyledText {
-                        text: "Color"
-                        font.pixelSize: Theme.fontSizeSmall
-                        color: Theme.surfaceText
-                        width: 50
+                    height: 36
+                    spacing: Theme.spacingM
+                    DankIcon {
+                        name: root.activeColor ? "check_box" : "check_box_outline_blank"
+                        size: 24
+                        color: root.activeColor ? Theme.primary : Theme.surfaceVariantText
                         anchors.verticalCenter: parent.verticalCenter
-                    }
-                    StyledRect {
-                        width: 32
-                        height: 32
-                        radius: 16
-                        color: root.activeColor ? Theme.primary : Theme.surfaceContainerHigh
-                        border.width: root.activeColor ? 0 : 2
-                        border.color: Theme.primary
-                        DankIcon {
-                            name: root.activeColor ? "palette" : "palette_outlined"
-                            size: 18
-                            color: root.activeColor ? Theme.onPrimary : Theme.primary
-                            anchors.centerIn: parent
-                        }
                         MouseArea {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
                             onClicked: root.saveSetting("activeColor", !root.activeColor)
                         }
+                    }
+                    StyledText {
+                        text: "Color"
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.surfaceText
+                        anchors.verticalCenter: parent.verticalCenter
                     }
                 }
 
