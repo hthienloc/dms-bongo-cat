@@ -174,131 +174,184 @@ PluginComponent {
 
     popoutContent: Component {
         PopoutComponent {
+            id: popout
             width: root.popoutWidth
             headerText: "Bongo Cat"
-            detailsText: root.isWaiting ? "Sleeping" : "Typing"
             showCloseButton: true
 
             Column {
                 width: parent.width
-                spacing: Theme.spacingM
-                anchors.leftMargin: Theme.spacingL
-                anchors.rightMargin: Theme.spacingL
-                anchors.topMargin: Theme.spacingM
-                anchors.bottomMargin: Theme.spacingM
-
-                Row {
+                spacing: Theme.spacingL
+                
+                // --- 1. Dynamic Status Card ---
+                StyledRect {
                     width: parent.width
-                    height: 40
-                    spacing: Theme.spacingS
-                    StyledText {
-                        text: "Size"
-                        font.pixelSize: Theme.fontSizeSmall
-                        color: Theme.surfaceText
-                        width: 50
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-                    DankSlider {
-                        width: parent.width - 50
-                        value: root.catSize * 100
-                        minimum: 50; maximum: 200
-                        centerMinimum: false; unit: "%"; showValue: true
-                        onSliderValueChanged: v => root.saveSetting("catSizePercent", v)
-                    }
-                }
-
-                Row {
-                    width: parent.width
-                    height: 40
-                    spacing: Theme.spacingS
-                    StyledText {
-                        text: "Idle"
-                        font.pixelSize: Theme.fontSizeSmall
-                        color: Theme.surfaceText
-                        width: 50
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-                    DankSlider {
-                        width: parent.width - 50
-                        value: root.idleTimeout
-                        minimum: 100; maximum: 1000
-                        centerMinimum: false; unit: "ms"; showValue: true
-                        onSliderValueChanged: v => root.saveSetting("idleTimeout", v)
-                    }
-                }
-
-                Row {
-                    width: parent.width
-                    height: 40
-                    spacing: Theme.spacingS
-                    StyledText {
-                        text: "Sleep"
-                        font.pixelSize: Theme.fontSizeSmall
-                        color: Theme.surfaceText
-                        width: 50
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-                    DankSlider {
-                        width: parent.width - 50
-                        value: root.waitingTimeout / 1000
-                        minimum: 1; maximum: 30
-                        centerMinimum: false; unit: "s"; showValue: true
-                        onSliderValueChanged: v => root.saveSetting("waitingTimeout", v * 1000)
-                    }
-                }
-
-                Row {
-                    width: parent.width
-                    height: 36
-                    spacing: Theme.spacingM
-                    DankIcon {
-                        name: root.enableBlinking ? "check_box" : "check_box_outline_blank"
-                        size: 24
-                        color: root.enableBlinking ? Theme.primary : Theme.surfaceVariantText
-                        anchors.verticalCenter: parent.verticalCenter
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.saveSetting("enableBlinking", !root.enableBlinking)
+                    height: 140
+                    radius: Theme.cornerRadius
+                    color: root.isWaiting ? Theme.surfaceContainerHigh : Theme.primaryContainer
+                    clip: true
+                    
+                    // Gradient overlay
+                    Rectangle {
+                        anchors.fill: parent
+                        gradient: Gradient {
+                            GradientStop { position: 0.0; color: "transparent" }
+                            GradientStop { position: 1.0; color: Qt.rgba(0,0,0, 0.1) }
                         }
                     }
-                    StyledText {
-                        text: "Blink"
-                        font.pixelSize: Theme.fontSizeSmall
-                        color: Theme.surfaceText
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-                }
 
-                Row {
-                    width: parent.width
-                    height: 36
-                    spacing: Theme.spacingM
-                    DankIcon {
-                        name: root.activeColor ? "check_box" : "check_box_outline_blank"
-                        size: 24
-                        color: root.activeColor ? Theme.primary : Theme.surfaceVariantText
-                        anchors.verticalCenter: parent.verticalCenter
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.saveSetting("activeColor", !root.activeColor)
+                    // The Big Cat
+                    Text {
+                        anchors.centerIn: parent
+                        font.family: bongoFont.name
+                        font.pixelSize: 80
+                        color: root.isWaiting ? Theme.surfaceText : Theme.primary
+                        text: root.forceSleep ? sleepGlyph : (isWaiting ? sleepGlyph : (isBlinking ? blinkGlyph : glyphMap[catState]))
+                        
+                        Behavior on color { ColorAnimation { duration: 300 } }
+                        
+                        // Subtle bounce animation when typing
+                        NumberAnimation on scale {
+                            id: pulseAnim
+                            from: 1.0; to: 1.1; duration: 100
+                            running: !root.isWaiting && root.catState !== 0
                         }
                     }
-                    StyledText {
-                        text: "Color"
-                        font.pixelSize: Theme.fontSizeSmall
-                        color: Theme.surfaceText
-                        anchors.verticalCenter: parent.verticalCenter
+
+                    // Status Badge
+                    StyledRect {
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.margins: Theme.spacingM
+                        width: 80
+                        height: 24
+                        radius: 12
+                        color: root.isWaiting ? Theme.surfaceContainerHighest : Theme.primary
+                        
+                        StyledText {
+                            anchors.centerIn: parent
+                            text: root.isWaiting ? "SLEEPING" : "ACTIVE"
+                            font.pixelSize: 10
+                            font.bold: true
+                            color: root.isWaiting ? Theme.surfaceVariantText : Theme.onPrimary
+                        }
                     }
                 }
 
-                StyledText {
-                    text: "Right-click icon to toggle sleep mode"
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: Theme.surfaceVariantText
-                    horizontalAlignment: Text.AlignHCenter
+                // --- 2. Settings Section ---
+                Column {
                     width: parent.width
+                    spacing: Theme.spacingS
+
+                    // Header for settings
+                    StyledText {
+                        text: "Appearance & Behavior"
+                        font.pixelSize: Theme.fontSizeSmall
+                        font.bold: true
+                        color: Theme.primary
+                        opacity: 0.8
+                    }
+
+                    // Size Setting
+                    Row {
+                        width: parent.width
+                        height: 48
+                        spacing: Theme.spacingM
+                        DankIcon { name: "aspect_ratio"; size: 20; color: Theme.onSurfaceVariant; anchors.verticalCenter: parent.verticalCenter }
+                        DankSlider {
+                            id: sizeSlider
+                            width: parent.width - 40
+                            value: root.catSize * 100
+                            minimum: 50; maximum: 200
+                            centerMinimum: false; unit: "%"; showValue: true
+                            onSliderValueChanged: v => root.saveSetting("catSizePercent", v)
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                    }
+
+                    // Idle Timeout
+                    Row {
+                        width: parent.width
+                        height: 48
+                        spacing: Theme.spacingM
+                        DankIcon { name: "timer"; size: 20; color: Theme.onSurfaceVariant; anchors.verticalCenter: parent.verticalCenter }
+                        DankSlider {
+                            width: parent.width - 40
+                            value: root.idleTimeout
+                            minimum: 100; maximum: 1000
+                            centerMinimum: false; unit: "ms"; showValue: true
+                            onSliderValueChanged: v => root.saveSetting("idleTimeout", v)
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                    }
+
+                    // Quick Toggles
+                    Row {
+                        width: parent.width
+                        height: 40
+                        spacing: Theme.spacingL
+                        
+                        // Blink Toggle
+                        Row {
+                            spacing: Theme.spacingS
+                            DankIcon {
+                                name: root.enableBlinking ? "visibility" : "visibility_off"
+                                size: 22
+                                color: root.enableBlinking ? Theme.primary : Theme.onSurfaceVariant
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.saveSetting("enableBlinking", !root.enableBlinking)
+                                }
+                            }
+                            StyledText {
+                                text: "Blink"
+                                font.pixelSize: Theme.fontSizeSmall
+                                color: Theme.surfaceText
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                        }
+
+                        // Color Toggle
+                        Row {
+                            spacing: Theme.spacingS
+                            DankIcon {
+                                name: "palette"
+                                size: 22
+                                color: root.activeColor ? Theme.primary : Theme.onSurfaceVariant
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.saveSetting("activeColor", !root.activeColor)
+                                }
+                            }
+                            StyledText {
+                                text: "Active Color"
+                                font.pixelSize: Theme.fontSizeSmall
+                                color: Theme.surfaceText
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                        }
+                    }
+                }
+
+                // --- 3. Footer Tip ---
+                StyledRect {
+                    width: parent.width
+                    height: 40
+                    radius: Theme.cornerRadius
+                    color: Theme.surfaceContainerLow
+                    
+                    Row {
+                        anchors.centerIn: parent
+                        spacing: Theme.spacingS
+                        DankIcon { name: "info"; size: 16; color: Theme.surfaceVariantText }
+                        StyledText {
+                            text: "Right-click pill to toggle sleep mode"
+                            font.pixelSize: 10
+                            color: Theme.surfaceVariantText
+                        }
+                    }
                 }
             }
         }
