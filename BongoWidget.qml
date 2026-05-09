@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls
 import Quickshell
 import Quickshell.Io
 import qs.Common
@@ -9,34 +10,42 @@ import qs.Modules.Plugins
 PluginComponent {
     id: root
 
-    // --- State ---
-    property int catState: 0  // 0: idle, 1: left, 2: right, 3: both
+    property int catState: 0
     property bool leftWasLast: false
     property bool isBlinking: false
     property bool isWaiting: true
-    
-    // --- Settings ---
-    readonly property string resolvedDevice: {
-        let dev = pluginData.inputDevice || "";
-        if (dev === "manual") return pluginData.manualDevicePath || "";
-        return dev;
-    }
-    readonly property real catSize: (pluginData.catSizePercent !== undefined ? pluginData.catSizePercent : 100) / 100.0
-    readonly property int idleTimeout: pluginData.idleTimeout || 250
-    readonly property bool enableBlinking: pluginData.enableBlinking ?? true
+    property bool forceSleep: false
 
-    // --- Font ---
+    readonly property string keyboardDevice: "/dev/input/event3"
+    readonly property real catSize: (pluginData?.catSizePercent ?? 100) / 100.0
+    readonly property int idleTimeout: pluginData?.idleTimeout ?? 250
+    readonly property bool enableBlinking: pluginData?.enableBlinking ?? true
+    readonly property int waitingTimeout: pluginData?.waitingTimeout ?? 5000
+    readonly property bool activeColor: pluginData?.activeColor ?? false
+
+    function saveSetting(key, value) {
+        try {
+            pluginService?.savePluginData(pluginId, key, value);
+            if (pluginData) pluginData[key] = value;
+        } catch(e) {
+            console.log("[BongoCat] Failed to save setting:", key, e);
+        }
+    }
+
     FontLoader {
         id: bongoFont
         source: "./assets/bongocat-Regular.otf"
+        onStatusChanged: {
+            if (status === FontLoader.Error) {
+                console.warn("[BongoCat] Failed to load font");
+            }
+        }
     }
 
-    // --- Glyphs ---
     readonly property var glyphMap: ["bc", "dc", "ba", "da"]
     readonly property string blinkGlyph: "gh"
     readonly property string sleepGlyph: "ef"
 
-    // --- Logic ---
     function onKeyPress(isBigHit) {
         isWaiting = false;
         if (isBigHit) {
@@ -61,7 +70,6 @@ PluginComponent {
         }
     }
 
-    // --- Timers ---
     Timer {
         id: idleTimer
         interval: root.idleTimeout
@@ -70,7 +78,7 @@ PluginComponent {
 
     Timer {
         id: waitingTimer
-        interval: 5000
+        interval: root.waitingTimeout
         onTriggered: isWaiting = true
     }
 
@@ -92,43 +100,59 @@ PluginComponent {
         onTriggered: isBlinking = false
     }
 
-    // --- Input Process ---
     Process {
         id: evtestProc
-        command: ["evtest", root.resolvedDevice]
-        running: root.resolvedDevice !== ""
-        
+        command: ["evtest", root.keyboardDevice]
+        running: true
+
         stdout: SplitParser {
             splitMarker: "\n"
             onRead: data => {
                 if (data.includes("EV_KEY")) {
                     const isBigHit = data.includes("KEY_SPACE") || data.includes("KEY_ENTER");
-                    if (data.includes("value 1")) { // Press
+                    if (data.includes("value 1")) {
                         root.onKeyPress(isBigHit);
-                    } else if (data.includes("value 0")) { // Release
+                    } else if (data.includes("value 0")) {
                         root.onKeyRelease(isBigHit);
                     }
                 }
             }
         }
 
+        stderr: StdioCollector {}
+
         onExited: exitCode => {
-            if (exitCode !== 0 && root.inputDevice !== "") {
+            if (exitCode !== 0) {
                 console.warn("[BongoCat] evtest failed. Error code:", exitCode);
             }
         }
     }
 
-    // --- UI ---
     horizontalBarPill: Component {
         Item {
             implicitWidth: catLabel.implicitWidth + 8
             implicitHeight: 32
 
             MouseArea {
+                id: clickArea
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
-                onClicked: root.triggerPopout()
+                acceptedButtons: Qt.LeftButton | Qt.RightButton
+                onClicked: mouse => {
+                    if (mouse.button === Qt.RightButton) {
+                        root.forceSleep = !root.forceSleep;
+                        console.log("[BongoCat] Right click - forceSleep:", root.forceSleep);
+                        if (root.forceSleep) root.isWaiting = true;
+                    } else {
+                        root.triggerPopout();
+                    }
+                }
+                onPressAndHold: mouse => {
+                    if (mouse.button === Qt.RightButton) {
+                        root.forceSleep = !root.forceSleep;
+                        if (root.forceSleep) root.isWaiting = true;
+                    }
+                }
             }
 
             Text {
@@ -136,40 +160,161 @@ PluginComponent {
                 anchors.centerIn: parent
                 font.family: bongoFont.name
                 font.pixelSize: 24 * root.catSize
-                color: Theme.surfaceText
-                text: isWaiting ? sleepGlyph : (isBlinking ? blinkGlyph : glyphMap[catState])
+                color: root.forceSleep ? Theme.surfaceVariantText : ((root.activeColor && !isWaiting) ? Theme.primary : Theme.surfaceText)
+                opacity: root.forceSleep ? 0.5 : 1.0
+                text: root.forceSleep ? sleepGlyph : (isWaiting ? sleepGlyph : (isBlinking ? blinkGlyph : glyphMap[catState]))
             }
         }
     }
 
     verticalBarPill: horizontalBarPill
 
-    popoutWidth: 300
-    popoutHeight: 160
+    popoutWidth: 280
+    popoutHeight: 320
 
     popoutContent: Component {
         PopoutComponent {
             width: root.popoutWidth
             headerText: "Bongo Cat"
-            detailsText: "Keyboard activity tracker"
-            showCloseButton: false
+            detailsText: root.isWaiting ? "Sleeping" : "Typing"
+            showCloseButton: true
 
             Column {
                 width: parent.width
-                spacing: 12
+                spacing: Theme.spacingM
+                anchors.leftMargin: Theme.spacingL
+                anchors.rightMargin: Theme.spacingL
+                anchors.topMargin: Theme.spacingM
+                anchors.bottomMargin: Theme.spacingM
 
-                StyledText {
-                    text: root.resolvedDevice ? "Connected to: " + root.resolvedDevice.split("/").pop() : "No device selected"
-                    font.pixelSize: Theme.fontSizeMedium
-                    color: Theme.surfaceText
-                    anchors.horizontalCenter: parent.horizontalCenter
+                Row {
+                    width: parent.width
+                    height: 40
+                    spacing: Theme.spacingS
+                    StyledText {
+                        text: "Size"
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.surfaceText
+                        width: 50
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                    DankSlider {
+                        width: parent.width - 50
+                        value: root.catSize * 100
+                        minimum: 50; maximum: 200
+                        centerMinimum: false; unit: "%"; showValue: true
+                        onSliderValueChanged: v => root.saveSetting("catSizePercent", v)
+                    }
+                }
+
+                Row {
+                    width: parent.width
+                    height: 40
+                    spacing: Theme.spacingS
+                    StyledText {
+                        text: "Idle"
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.surfaceText
+                        width: 50
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                    DankSlider {
+                        width: parent.width - 50
+                        value: root.idleTimeout
+                        minimum: 100; maximum: 1000
+                        centerMinimum: false; unit: "ms"; showValue: true
+                        onSliderValueChanged: v => root.saveSetting("idleTimeout", v)
+                    }
+                }
+
+                Row {
+                    width: parent.width
+                    height: 40
+                    spacing: Theme.spacingS
+                    StyledText {
+                        text: "Sleep"
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.surfaceText
+                        width: 50
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                    DankSlider {
+                        width: parent.width - 50
+                        value: root.waitingTimeout / 1000
+                        minimum: 1; maximum: 30
+                        centerMinimum: false; unit: "s"; showValue: true
+                        onSliderValueChanged: v => root.saveSetting("waitingTimeout", v * 1000)
+                    }
+                }
+
+                Row {
+                    width: parent.width
+                    height: 40
+                    StyledText {
+                        text: "Blink"
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.surfaceText
+                        width: 50
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                    StyledRect {
+                        width: 32
+                        height: 32
+                        radius: 16
+                        color: root.enableBlinking ? Theme.primary : Theme.surfaceContainerHigh
+                        border.width: root.enableBlinking ? 0 : 2
+                        border.color: Theme.primary
+                        DankIcon {
+                            name: root.enableBlinking ? "visibility" : "visibility_off"
+                            size: 18
+                            color: root.enableBlinking ? Theme.onPrimary : Theme.primary
+                            anchors.centerIn: parent
+                        }
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.saveSetting("enableBlinking", !root.enableBlinking)
+                        }
+                    }
+                }
+
+                Row {
+                    width: parent.width
+                    height: 40
+                    StyledText {
+                        text: "Color"
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.surfaceText
+                        width: 50
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                    StyledRect {
+                        width: 32
+                        height: 32
+                        radius: 16
+                        color: root.activeColor ? Theme.primary : Theme.surfaceContainerHigh
+                        border.width: root.activeColor ? 0 : 2
+                        border.color: Theme.primary
+                        DankIcon {
+                            name: root.activeColor ? "palette" : "palette_outlined"
+                            size: 18
+                            color: root.activeColor ? Theme.onPrimary : Theme.primary
+                            anchors.centerIn: parent
+                        }
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.saveSetting("activeColor", !root.activeColor)
+                        }
+                    }
                 }
 
                 StyledText {
-                    text: root.isWaiting ? "Sleeping..." : "Typing active!"
+                    text: "Right-click icon to toggle sleep mode"
                     font.pixelSize: Theme.fontSizeSmall
-                    color: root.isWaiting ? Theme.surfaceVariantText : Theme.primary
-                    anchors.horizontalCenter: parent.horizontalCenter
+                    color: Theme.surfaceVariantText
+                    horizontalAlignment: Text.AlignHCenter
+                    width: parent.width
                 }
             }
         }
