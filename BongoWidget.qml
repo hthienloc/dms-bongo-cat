@@ -256,7 +256,10 @@ PluginComponent {
                                 anchors.fill: parent
                                 enabled: (root.catSize * 100) !== 100
                                 cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                                onClicked: root.saveSetting("catSizePercent", 100)
+                                onClicked: {
+                                    root.saveSetting("catSizePercent", 100);
+                                    sizeSlider.value = 100;
+                                }
                             }
                         }
                     }
@@ -268,6 +271,7 @@ PluginComponent {
                         spacing: Theme.spacingM
                         DankIcon { name: "timer"; size: 20; color: Theme.primary; anchors.verticalCenter: parent.verticalCenter }
                         DankSlider {
+                            id: timeoutSlider
                             width: parent.width - 80
                             value: root.idleTimeout
                             minimum: 100; maximum: 1000
@@ -285,7 +289,10 @@ PluginComponent {
                                 anchors.fill: parent
                                 enabled: root.idleTimeout !== 250
                                 cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                                onClicked: root.saveSetting("idleTimeout", 250)
+                                onClicked: {
+                                    root.saveSetting("idleTimeout", 250);
+                                    timeoutSlider.value = 250;
+                                }
                             }
                         }
                     }
