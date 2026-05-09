@@ -218,24 +218,6 @@ PluginComponent {
                         }
                     }
 
-                    // Status Badge
-                    StyledRect {
-                        anchors.right: parent.right
-                        anchors.top: parent.top
-                        anchors.margins: Theme.spacingM
-                        width: 80
-                        height: 24
-                        radius: 12
-                        color: root.isWaiting ? Theme.onSurfaceVariant : Theme.primary
-                        
-                        StyledText {
-                            anchors.centerIn: parent
-                            text: root.isWaiting ? "SLEEPING" : "ACTIVE"
-                            font.pixelSize: 10
-                            font.bold: true
-                            color: root.isWaiting ? Theme.surface : Theme.onPrimary
-                        }
-                    }
                 }
 
                 // --- 2. Settings Section ---
