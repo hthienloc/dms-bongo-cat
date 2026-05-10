@@ -86,7 +86,7 @@ PluginComponent {
         id: blinkIntervalTimer
         interval: 6000 + Math.random() * 8000
         repeat: true
-        running: root.enableBlinking && !isWaiting
+        running: root.enableBlinking && !root.isWaiting
         onTriggered: {
             interval = 6000 + Math.random() * 8000;
             isBlinking = true;
@@ -160,9 +160,9 @@ PluginComponent {
                 anchors.centerIn: parent
                 font.family: bongoFont.name
                 font.pixelSize: 24 * root.catSize
-                color: root.forceSleep ? Theme.surfaceVariantText : ((root.activeColor && !isWaiting) ? Theme.primary : Theme.surfaceText)
+                color: root.forceSleep ? Theme.surfaceVariantText : ((root.activeColor && !root.isWaiting) ? Theme.primary : Theme.surfaceText)
                 opacity: root.forceSleep ? 0.5 : 1.0
-                text: root.forceSleep ? sleepGlyph : (isWaiting ? sleepGlyph : (isBlinking ? blinkGlyph : glyphMap[catState]))
+                text: root.forceSleep ? root.sleepGlyph : (root.isWaiting ? root.sleepGlyph : (root.isBlinking ? root.blinkGlyph : root.glyphMap[root.catState]))
             }
         }
     }
@@ -179,6 +179,8 @@ PluginComponent {
             headerText: "Bongo Cat"
             showCloseButton: true
 
+            readonly property bool isActive: !root.isWaiting && !root.forceSleep
+
             Column {
                 width: parent.width
                 spacing: Theme.spacingL
@@ -188,7 +190,7 @@ PluginComponent {
                     width: parent.width
                     height: 140
                     radius: Theme.cornerRadius
-                    color: root.isWaiting ? Theme.surface : Theme.primaryContainer
+                    color: popout.isActive ? Theme.primaryContainer : Theme.surface
                     clip: true
                     
                     // Gradient overlay
@@ -206,15 +208,9 @@ PluginComponent {
                         font.family: bongoFont.name
                         font.pixelSize: 80
                         font.letterSpacing: -2
-                        color: root.isWaiting ? Theme.primary : Theme.onPrimaryContainer
-                        text: root.forceSleep ? sleepGlyph : (isWaiting ? sleepGlyph : (isBlinking ? blinkGlyph : glyphMap[catState]))
-                        
-                        Behavior on color { ColorAnimation { duration: 300 } }
-                        
-                        // Subtle bounce animation when typing
-
+                        color: popout.isActive ? Theme.onPrimaryContainer : Theme.surfaceText
+                        text: root.forceSleep ? root.sleepGlyph : (!popout.isActive ? root.sleepGlyph : (root.isBlinking ? root.blinkGlyph : root.glyphMap[root.catState]))
                     }
-
                 }
 
                 // --- 2. Settings Section ---
