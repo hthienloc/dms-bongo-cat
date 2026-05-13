@@ -15,6 +15,7 @@ PluginComponent {
     property bool isBlinking: false
     property bool isWaiting: true
     property bool forceSleep: false
+    property int pressedKeysCount: 0
 
     readonly property string keyboardDevice: "/dev/input/event3"
     readonly property real catSize: (pluginData?.catSizePercent ?? 100) / 100.0
@@ -48,32 +49,47 @@ PluginComponent {
 
     function onKeyPress(isBigHit) {
         isWaiting = false;
+        pressedKeysCount++;
+        
         if (isBigHit) {
             catState = 3;
         } else {
-            if (catState !== 0) {
-                catState = 3;
-            } else {
+            if (catState === 0) {
+                leftWasLast = !leftWasLast;
+                catState = leftWasLast ? 1 : 2;
+            } else if (catState !== 3) {
+                // If already hitting with one paw, maybe alternate or stay
+                // For sustained feel, staying in 3 if multiple keys are down is also an option
+                // but let's keep the simple alternation for new presses.
                 leftWasLast = !leftWasLast;
                 catState = leftWasLast ? 1 : 2;
             }
         }
-        idleTimer.restart();
+        idleTimer.stop();
         waitingTimer.restart();
     }
 
     function onKeyRelease(isBigHit) {
-        if (isBigHit) {
-            catState = 0;
-        } else {
-            catState = (catState === 3) ? (leftWasLast ? 1 : 2) : 0;
+        pressedKeysCount = Math.max(0, pressedKeysCount - 1);
+        
+        if (pressedKeysCount === 0) {
+            if (isBigHit) {
+                catState = 0;
+            } else {
+                catState = (catState === 3) ? (leftWasLast ? 1 : 2) : 0;
+            }
+            idleTimer.restart();
         }
     }
 
     Timer {
         id: idleTimer
         interval: root.idleTimeout
-        onTriggered: catState = 0
+        onTriggered: {
+            if (pressedKeysCount === 0) {
+                catState = 0;
+            }
+        }
     }
 
     Timer {
