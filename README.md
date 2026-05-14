@@ -6,7 +6,7 @@ Watch the cat tap its paws as you type!
 
 ## Install
 
-[<kbd>Install Now</kbd>](dms://plugin/install/bongo-cat)
+[**Install Now**](dms://plugin/install/bongo-cat)
 
 Or manually:
 ```bash
