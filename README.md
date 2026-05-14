@@ -7,7 +7,7 @@ Watch the cat tap its paws as you type!
 ## Install
 
 ```
-dms://plugin/install/bongo-cat
+dms://plugin/install/bongoCat
 ```
 
 Or manually:
