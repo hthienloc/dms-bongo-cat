@@ -1,52 +1,36 @@
-# Bongo Cat Plugin for DMS
+# Bongo Cat
 
-A fun, reactive Bongo Cat widget for [Dank Material Shell](https://github.com/AvengeMedia/DankMaterialShell). Watch the cat tap its paws on your bar in real-time as you type!
+Watch the cat tap its paws as you type!
 
-![Screenshot](screenshot.png)
+<img src="screenshot.png" width="400" alt="Screenshot">
+
+## Install
+
+[<kbd>Install Now</kbd>](dms://plugin/install/bongo-cat)
+
+Or manually:
+```bash
+git clone https://github.com/hthienloc/dms-bongo-cat ~/.config/DankMaterialShell/plugins/bongoCat
+```
 
 ## Features
 
-- **Real-time Reactivity**: The cat slaps its left and right paws as you type.
-- **Big Hits**: Space and Enter keys trigger a double-paw slap.
-- **Blinking**: The cat blinks occasionally when you're active.
-- **Sleep Mode**: The cat goes to sleep after 5 seconds of inactivity.
-- **Customizable**: Adjust the cat's size and idle timeout in settings.
-- **Automatic Device Discovery**: Easily select your keyboard from the settings menu.
+- **Real-time typing** - Cat reacts to your keyboard input
+- **Big hit detection** - Space/Enter triggers double-paw animation
+- **Blink & sleep** - Cat blinks when active, sleeps after inactivity
+- **Adjustable size** - Customize cat size from 50% to 200%
 
-## Prerequisites
+## Usage
 
-This plugin requires `evtest` to monitor keyboard events globally.
+| Action | Result |
+|--------|--------|
+| Left click | Open settings |
+| Right click | Toggle sleep mode |
 
-### Installation (Fedora)
-```bash
-sudo dnf install evtest
-```
+## Requirements
 
-### Installation (Arch Linux)
-```bash
-sudo pacman -S evtest
-```
-
-### Permissions (Important!)
-To allow the plugin to read keyboard events without root access, you must add your user to the `input` group:
-
-```bash
-sudo usermod -aG input $USER
-```
-**You must reboot (or log out and back in) for this change to take effect.**
-
-## Installation
-
-1. Create a directory for the plugin:
-   ```bash
-   mkdir -p ~/.config/DankMaterialShell/plugins/bongoCat
-   ```
-2. Copy all files and the `assets` folder to that directory.
-3. Reload DMS or scan for plugins in DMS Settings.
-
-## Credits
-
-Based on the [Slow Bongo](https://github.com/noctalia-dev/noctalia-plugins/tree/main/slowbongo) plugin for Noctalia.
+- `evtest` - Keyboard event monitoring
+- User must be in `input` group: `sudo usermod -aG input $USER`
 
 ## License
 
