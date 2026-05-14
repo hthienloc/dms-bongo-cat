@@ -143,8 +143,8 @@ PluginComponent {
 
     horizontalBarPill: Component {
         Item {
-            implicitWidth: catLabel.implicitWidth + 8
-            implicitHeight: 32
+            implicitWidth: catLabel.implicitWidth + Theme.spacingS
+            implicitHeight: Theme.iconSize
 
             MouseArea {
                 id: clickArea
