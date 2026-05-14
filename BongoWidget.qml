@@ -58,9 +58,6 @@ PluginComponent {
                 leftWasLast = !leftWasLast;
                 catState = leftWasLast ? 1 : 2;
             } else if (catState !== 3) {
-                // If already hitting with one paw, maybe alternate or stay
-                // For sustained feel, staying in 3 if multiple keys are down is also an option
-                // but let's keep the simple alternation for new presses.
                 leftWasLast = !leftWasLast;
                 catState = leftWasLast ? 1 : 2;
             }
