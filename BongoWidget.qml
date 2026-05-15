@@ -48,6 +48,9 @@ PluginComponent {
     }
 
     readonly property var glyphMap: ["bc", "dc", "ba", "da"]
+    readonly property int iconSize: Theme.iconSizeSmall
+    readonly property int padding: Theme.spacingS
+    readonly property int spacing: Theme.spacingXS
     readonly property string blinkGlyph: "gh"
     readonly property string sleepGlyph: "ef"
 
