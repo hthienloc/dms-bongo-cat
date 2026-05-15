@@ -6,7 +6,14 @@ Watch the cat tap its paws as you type!
 
 ## Install
 
-```
+
+**Required:** This plugin requires [dms-common](https://github.com/hthienloc/dms-common) to be installed.
+
+```bash
+# 1. Install shared components
+git clone https://github.com/hthienloc/dms-common ~/.config/DankMaterialShell/plugins/dms-common
+
+# 2. Install this plugin
 dms://plugin/install/bongoCat
 ```
 
@@ -36,6 +43,4 @@ git clone https://github.com/hthienloc/dms-bongo-cat ~/.config/DankMaterialShell
 
 ## License
 
-MIT
-## Dependencies
-- Requires [dms-common](https://github.com/hthienloc/dms-common) to be installed in the plugins directory.
+MIT(https://github.com/hthienloc/dms-common) to be installed in the plugins directory.
