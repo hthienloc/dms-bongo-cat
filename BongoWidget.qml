@@ -202,7 +202,6 @@ PluginComponent {
                 width: parent.width
                 spacing: Theme.spacingL
                 
-                // --- 1. Dynamic Status Card ---
                 StyledRect {
                     width: parent.width
                     height: 140
@@ -230,7 +229,6 @@ PluginComponent {
                     }
                 }
 
-                // --- 2. Settings Section ---
                 Column {
                     width: parent.width
                     spacing: Theme.spacingS
@@ -362,7 +360,6 @@ PluginComponent {
                     }
                 }
 
-                // --- 3. Footer Tip ---
                 HintSection {
                     width: parent.width
                     showHints: root.showHints
