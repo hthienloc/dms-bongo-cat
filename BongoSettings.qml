@@ -118,5 +118,31 @@ PluginSettings {
                 font.italic: true
             }
         }
+    StyledRect {
+        width: parent.width
+        height: hintColumn.implicitHeight + Theme.spacingL * 2
+        radius: Theme.cornerRadius
+        color: Theme.surfaceContainer
+
+        Column {
+            id: hintColumn
+            anchors.fill: parent
+            anchors.margins: Theme.spacingL
+            spacing: Theme.spacingM
+
+            StyledText {
+                text: "Interface"
+                font.pixelSize: Theme.fontSizeMedium
+                font.weight: Font.Medium
+                color: Theme.surfaceText
+            }
+
+            ToggleSetting {
+                settingKey: "showHints"
+                label: "Show Hints"
+                description: "Display helpful usage tips and shortcuts at the bottom of the popout."
+                defaultValue: true
+            }
+        }
     }
 }

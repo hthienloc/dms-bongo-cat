@@ -6,9 +6,13 @@ import qs.Common
 import qs.Services
 import qs.Widgets
 import qs.Modules.Plugins
+import "./components"
+
 
 PluginComponent {
     id: root
+    readonly property bool showHints: pluginData.showHints ?? true
+
 
     property int catState: 0
     property bool leftWasLast: false
@@ -359,21 +363,13 @@ PluginComponent {
                 }
 
                 // --- 3. Footer Tip ---
-                StyledRect {
+                HintSection {
                     width: parent.width
-                    height: 40
-                    radius: Theme.cornerRadius
-                    color: Theme.surfaceContainerLow
-                    
-                    Row {
-                        anchors.centerIn: parent
-                        spacing: Theme.spacingS
-                        DankIcon { name: "info"; size: 16; color: Theme.surfaceText }
-                        StyledText {
-                            text: "Right-click pill to toggle sleep mode"
-                            font.pixelSize: 10
-                            color: Theme.surfaceText
-                        }
+                    showHints: root.showHints
+
+                    HintItem {
+                        icon: "mouse"
+                        text: "Right-click bar icon to toggle sleep mode."
                     }
                 }
             }
