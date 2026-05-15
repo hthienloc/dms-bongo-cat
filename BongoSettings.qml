@@ -27,7 +27,7 @@ PluginSettings {
 
             Repeater {
                 model: [
-                    { cmd: "sudo usermod -aG input $USER && echo 'Logout and login to apply changes'", label: "Add to input group" }
+                    { cmd: "sudo usermod -aG input $USER", label: "Add to input group" }
                 ]
 
                 delegate: CopyBox {
