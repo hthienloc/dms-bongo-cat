@@ -37,3 +37,5 @@ git clone https://github.com/hthienloc/dms-bongo-cat ~/.config/DankMaterialShell
 ## License
 
 MIT
+## Dependencies
+- Requires [dms-common](https://github.com/hthienloc/dms-common) to be installed in the plugins directory.

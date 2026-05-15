@@ -3,7 +3,7 @@ import qs.Common
 import qs.Widgets
 import qs.Modules.Plugins
 import Quickshell.Io
-import "./components"
+import "../dms-common"
 
 PluginSettings {
     id: root
