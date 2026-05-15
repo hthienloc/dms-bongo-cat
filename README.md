@@ -43,4 +43,4 @@ git clone https://github.com/hthienloc/dms-bongo-cat ~/.config/DankMaterialShell
 
 ## License
 
-MIT(https://github.com/hthienloc/dms-common) to be installed in the plugins directory.
+MIT
