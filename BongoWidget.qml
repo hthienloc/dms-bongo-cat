@@ -54,22 +54,19 @@ PluginComponent {
     readonly property string blinkGlyph: "gh"
     readonly property string sleepGlyph: "ef"
 
-    function onKeyPress(isBigHit) {
+    function onKeyPress(isBigHit, isRepeat = false) {
         isWaiting = false;
-        pressedKeysCount++;
+        if (!isRepeat) pressedKeysCount++;
         
         if (isBigHit) {
             catState = 3;
         } else {
-            if (catState === 0) {
-                leftWasLast = !leftWasLast;
-                catState = leftWasLast ? 1 : 2;
-            } else if (catState !== 3) {
-                leftWasLast = !leftWasLast;
-                catState = leftWasLast ? 1 : 2;
-            }
+            // Toggle hands for a fresh tap feel
+            leftWasLast = !leftWasLast;
+            catState = leftWasLast ? 1 : 2;
         }
-        idleTimer.stop();
+
+        idleTimer.restart();
         waitingTimer.restart();
     }
 
@@ -77,11 +74,7 @@ PluginComponent {
         pressedKeysCount = Math.max(0, pressedKeysCount - 1);
         
         if (pressedKeysCount === 0) {
-            if (isBigHit) {
-                catState = 0;
-            } else {
-                catState = (catState === 3) ? (leftWasLast ? 1 : 2) : 0;
-            }
+            catState = 0;
             idleTimer.restart();
         }
     }
@@ -90,9 +83,8 @@ PluginComponent {
         id: idleTimer
         interval: root.idleTimeout
         onTriggered: {
-            if (pressedKeysCount === 0) {
-                catState = 0;
-            }
+            catState = 0;
+            pressedKeysCount = 0; // Watchdog: reset count if idle
         }
     }
 
@@ -134,6 +126,8 @@ PluginComponent {
                         root.onKeyPress(isBigHit);
                     } else if (data.includes("value 0")) {
                         root.onKeyRelease(isBigHit);
+                    } else if (data.includes("value 2")) {
+                        root.onKeyPress(isBigHit, true);
                     }
                 }
             }
