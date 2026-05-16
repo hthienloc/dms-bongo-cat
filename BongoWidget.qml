@@ -23,7 +23,7 @@ PluginComponent {
 
     readonly property string keyboardDevice: "/dev/input/event3"
     readonly property real catSize: (pluginData?.catSizePercent ?? 100) / 100.0
-    readonly property int idleTimeout: pluginData?.idleTimeout ?? 250
+    readonly property int idleTimeout: pluginData?.idleTimeout ?? 1000
     readonly property bool enableBlinking: pluginData?.enableBlinking ?? true
     readonly property int waitingTimeout: pluginData?.waitingTimeout ?? 5000
     readonly property bool activeColor: pluginData?.activeColor ?? false
@@ -63,6 +63,13 @@ PluginComponent {
                 catState = 3;
             } else {
                 leftWasLast = !leftWasLast;
+                catState = leftWasLast ? 1 : 2;
+            }
+        } else if (catState === 0) {
+            // Re-assert down state on repeat if watchdog triggered during repeat delay
+            if (isBigHit) {
+                catState = 3;
+            } else {
                 catState = leftWasLast ? 1 : 2;
             }
         }
@@ -292,15 +299,15 @@ PluginComponent {
                             name: "restore"
                             size: 18
                             color: Theme.primary
-                            opacity: root.idleTimeout !== 250 ? 1.0 : 0.3
+                            opacity: root.idleTimeout !== 1000 ? 1.0 : 0.3
                             anchors.verticalCenter: parent.verticalCenter
                             MouseArea {
                                 anchors.fill: parent
-                                enabled: root.idleTimeout !== 250
+                                enabled: root.idleTimeout !== 1000
                                 cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
                                 onClicked: {
-                                    root.saveSetting("idleTimeout", 250);
-                                    timeoutSlider.value = 250;
+                                    root.saveSetting("idleTimeout", 1000);
+                                    timeoutSlider.value = 1000;
                                 }
                             }
                         }
