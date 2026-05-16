@@ -14,7 +14,7 @@ Watch the cat tap its paws as you type!
 git clone https://github.com/hthienloc/dms-common ~/.config/DankMaterialShell/plugins/dms-common
 
 # 2. Install this plugin
-dms://plugin/install/bongoCat
+dms plugins install bongoCat
 ```
 
 Or manually:
