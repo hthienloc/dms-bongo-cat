@@ -56,14 +56,15 @@ PluginComponent {
 
     function onKeyPress(isBigHit, isRepeat = false) {
         isWaiting = false;
-        if (!isRepeat) pressedKeysCount++;
         
-        if (isBigHit) {
-            catState = 3;
-        } else {
-            // Toggle hands for a fresh tap feel
-            leftWasLast = !leftWasLast;
-            catState = leftWasLast ? 1 : 2;
+        if (!isRepeat) {
+            pressedKeysCount++;
+            if (isBigHit) {
+                catState = 3;
+            } else {
+                leftWasLast = !leftWasLast;
+                catState = leftWasLast ? 1 : 2;
+            }
         }
 
         idleTimer.restart();
