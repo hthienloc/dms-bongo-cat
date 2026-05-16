@@ -20,6 +20,7 @@ PluginComponent {
     property bool isWaiting: true
     property bool forceSleep: false
     property int pressedKeysCount: 0
+    property real _lastPressTime: 0
 
     readonly property string keyboardDevice: "/dev/input/event3"
     readonly property real catSize: (pluginData?.catSizePercent ?? 100) / 100.0
@@ -56,17 +57,22 @@ PluginComponent {
 
     function onKeyPress(isBigHit, isRepeat = false) {
         isWaiting = false;
+        let now = Date.now();
         
         if (!isRepeat) {
-            pressedKeysCount++;
-            if (isBigHit) {
-                catState = 3;
-            } else {
-                leftWasLast = !leftWasLast;
-                catState = leftWasLast ? 1 : 2;
+            // Debounce: ignore multiple 'press' signals within 50ms to avoid double-taps on bounce/hold
+            if (now - _lastPressTime > 50) {
+                pressedKeysCount++;
+                if (isBigHit) {
+                    catState = 3;
+                } else {
+                    leftWasLast = !leftWasLast;
+                    catState = leftWasLast ? 1 : 2;
+                }
+                _lastPressTime = now;
             }
         } else if (catState === 0) {
-            // Re-assert down state on repeat if watchdog triggered during repeat delay
+            // Re-assert down state on repeat if watchdog triggered
             if (isBigHit) {
                 catState = 3;
             } else {
@@ -74,6 +80,7 @@ PluginComponent {
             }
         }
 
+        idleTimer.interval = root.idleTimeout;
         idleTimer.restart();
         waitingTimer.restart();
     }
@@ -82,7 +89,12 @@ PluginComponent {
         pressedKeysCount = Math.max(0, pressedKeysCount - 1);
         
         if (pressedKeysCount === 0) {
-            catState = 0;
+            // Use a short delay (50ms) to filter out bounces before going idle
+            idleTimer.interval = 50;
+            idleTimer.restart();
+        } else {
+            // Still holding other keys, keep watchdog interval
+            idleTimer.interval = root.idleTimeout;
             idleTimer.restart();
         }
     }
@@ -93,6 +105,7 @@ PluginComponent {
         onTriggered: {
             catState = 0;
             pressedKeysCount = 0; // Watchdog: reset count if idle
+            interval = root.idleTimeout; // Reset to user setting for next call
         }
     }
 
