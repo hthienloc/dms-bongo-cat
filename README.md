@@ -41,6 +41,12 @@ git clone https://github.com/hthienloc/dms-bongo-cat ~/.config/DankMaterialShell
 - `evtest` - Keyboard event monitoring
 - User must be in `input` group: `sudo usermod -aG input $USER`
 
+## Roadmap / TODO
+
+- [ ] **Stable Hand Hold** - Currently, keeping the hand down during long presses is challenging due to the synchronization gap between the initial OS key-press event and the start of repeat events. Future improvements involve more sophisticated input polling or kernel-level event bridging.
+- [ ] **Mouse Support** - Add paw animations for mouse clicks and movement.
+- [ ] **Custom Skins** - Support for different cat skins and colors.
+
 ## License
 
 MIT

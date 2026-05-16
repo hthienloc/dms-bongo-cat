@@ -33,7 +33,7 @@ PluginComponent {
     }
 
     readonly property real catSize: (pluginData?.catSizePercent ?? 100) / 100.0
-    readonly property int idleTimeout: pluginData?.idleTimeout ?? 2000
+    readonly property int idleTimeout: pluginData?.idleTimeout ?? 250
     readonly property bool enableBlinking: pluginData?.enableBlinking ?? true
     readonly property int waitingTimeout: pluginData?.waitingTimeout ?? 5000
     readonly property bool activeColor: pluginData?.activeColor ?? false
@@ -66,30 +66,12 @@ PluginComponent {
 
     function onKeyPress(isBigHit, isRepeat = false) {
         isWaiting = false;
-        releaseTimer.stop(); // Interrupt any pending 'up' animation
         
-        let now = Date.now();
-        
-        if (!isRepeat) {
-            // Debounce mechanical bounce (40ms lockout)
-            if (now - _lastPressTime > 40) {
-                pressedKeysCount++;
-                if (isBigHit) {
-                    catState = 3;
-                } else {
-                    leftWasLast = !leftWasLast;
-                    catState = leftWasLast ? 1 : 2;
-                }
-                _lastPressTime = now;
-            }
-        } else if (catState === 0) {
-            // Re-assert hand if watchdog triggered during long repeat delay
-            if (isBigHit) {
-                catState = 3;
-            } else {
-                // Keep the same hand to avoid weird double-switch look
-                catState = leftWasLast ? 1 : 2;
-            }
+        if (isBigHit) {
+            catState = 3;
+        } else {
+            leftWasLast = !leftWasLast;
+            catState = leftWasLast ? 1 : 2;
         }
 
         idleTimer.restart();
@@ -97,20 +79,7 @@ PluginComponent {
     }
 
     function onKeyRelease(isBigHit) {
-        pressedKeysCount = Math.max(0, pressedKeysCount - 1);
-        
-        if (pressedKeysCount === 0) {
-            // 300ms delay to bridge repeat gaps or ghost releases
-            releaseTimer.restart();
-        }
-        
         idleTimer.restart();
-    }
-
-    Timer {
-        id: releaseTimer
-        interval: 300
-        onTriggered: catState = 0
     }
 
     Timer {
@@ -380,15 +349,15 @@ PluginComponent {
                             name: "restore"
                             size: 18
                             color: Theme.primary
-                            opacity: root.idleTimeout !== 2000 ? 1.0 : 0.3
+                            opacity: root.idleTimeout !== 250 ? 1.0 : 0.3
                             anchors.verticalCenter: parent.verticalCenter
                             MouseArea {
                                 anchors.fill: parent
-                                enabled: root.idleTimeout !== 2000
+                                enabled: root.idleTimeout !== 250
                                 cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
                                 onClicked: {
-                                    root.saveSetting("idleTimeout", 2000);
-                                    timeoutSlider.value = 2000;
+                                    root.saveSetting("idleTimeout", 250);
+                                    timeoutSlider.value = 250;
                                 }
                             }
                         }
