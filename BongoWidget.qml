@@ -22,9 +22,18 @@ PluginComponent {
     property int pressedKeysCount: 0
     property real _lastPressTime: 0
 
-    readonly property string keyboardDevice: "/dev/input/event3"
+    property var deviceOptions: ["All Keyboards (Auto)"]
+    property var deviceMap: ({ "All Keyboards (Auto)": "all" })
+    readonly property string selectedDevicePath: pluginData?.selectedDevicePath ?? "all"
+    readonly property string selectedDeviceName: {
+        for (let name in deviceMap) {
+            if (deviceMap[name] === selectedDevicePath) return name;
+        }
+        return "All Keyboards (Auto)";
+    }
+
     readonly property real catSize: (pluginData?.catSizePercent ?? 100) / 100.0
-    readonly property int idleTimeout: pluginData?.idleTimeout ?? 1000
+    readonly property int idleTimeout: pluginData?.idleTimeout ?? 2000
     readonly property bool enableBlinking: pluginData?.enableBlinking ?? true
     readonly property int waitingTimeout: pluginData?.waitingTimeout ?? 5000
     readonly property bool activeColor: pluginData?.activeColor ?? false
@@ -57,12 +66,12 @@ PluginComponent {
 
     function onKeyPress(isBigHit, isRepeat = false) {
         isWaiting = false;
-        releaseTimer.stop(); // Don't go idle if we are pressing/repeating
+        releaseTimer.stop(); // Interrupt any pending 'up' animation
         
         let now = Date.now();
         
         if (!isRepeat) {
-            // Debounce: ignore multiple 'press' signals within 40ms to avoid double-taps on mechanical bounce
+            // Debounce mechanical bounce (40ms lockout)
             if (now - _lastPressTime > 40) {
                 pressedKeysCount++;
                 if (isBigHit) {
@@ -74,10 +83,11 @@ PluginComponent {
                 _lastPressTime = now;
             }
         } else if (catState === 0) {
-            // Re-assert down state on repeat if we somehow went idle (watchdog)
+            // Re-assert hand if watchdog triggered during long repeat delay
             if (isBigHit) {
                 catState = 3;
             } else {
+                // Keep the same hand to avoid weird double-switch look
                 catState = leftWasLast ? 1 : 2;
             }
         }
@@ -90,7 +100,7 @@ PluginComponent {
         pressedKeysCount = Math.max(0, pressedKeysCount - 1);
         
         if (pressedKeysCount === 0) {
-            // Wait 150ms before returning to idle to bridge gaps in repeat events or ghost releases
+            // 300ms delay to bridge repeat gaps or ghost releases
             releaseTimer.restart();
         }
         
@@ -99,7 +109,7 @@ PluginComponent {
 
     Timer {
         id: releaseTimer
-        interval: 150
+        interval: 300
         onTriggered: catState = 0
     }
 
@@ -108,7 +118,7 @@ PluginComponent {
         interval: root.idleTimeout
         onTriggered: {
             catState = 0;
-            pressedKeysCount = 0; // Watchdog: reset count if idle
+            pressedKeysCount = 0; 
         }
     }
 
@@ -137,21 +147,60 @@ PluginComponent {
     }
 
     Process {
-        id: evtestProc
-        command: ["evtest", root.keyboardDevice]
+        id: deviceFetcher
+        command: ["bash", "-c", "libinput list-devices | grep -E 'Device:|Kernel:|Capabilities:' | awk '/Device:/ {name=$2; for(i=3;i<=NF;i++) name=name\" \"$i} /Kernel:/ {path=$2} /Capabilities:/ {if($0 ~ /keyboard/) print name \"|\" path}'"]
+        stdout: StdioCollector {
+            onRead: text => {
+                const output = text.trim();
+                if (!output) return;
+                let options = ["All Keyboards (Auto)"];
+                let map = { "All Keyboards (Auto)": "all" };
+                output.split("\n").forEach(line => {
+                    const parts = line.split("|");
+                    if (parts.length === 2) {
+                        const name = parts[0];
+                        const path = parts[1];
+                        let uniqueName = name;
+                        let i = 2;
+                        while (options.includes(uniqueName)) {
+                            uniqueName = name + " (" + i + ")";
+                            i++;
+                        }
+                        options.push(uniqueName);
+                        map[uniqueName] = path;
+                    }
+                });
+                root.deviceOptions = options;
+                root.deviceMap = map;
+            }
+        }
+    }
+
+    Component.onCompleted: deviceFetcher.running = true
+
+    Process {
+        id: inputProc
+        command: selectedDevicePath === "all" ? ["libinput", "debug-events"] : ["evtest", selectedDevicePath]
         running: true
 
         stdout: SplitParser {
             splitMarker: "\n"
             onRead: data => {
                 if (data.includes("EV_KEY")) {
-                    const isBigHit = data.includes("KEY_SPACE") || data.includes("KEY_ENTER");
+                    const isBigHit = data.includes("KEY_SPACE") || data.includes("KEY_ENTER") || data.includes("KEY_KPENTER");
                     if (data.includes("value 1")) {
                         root.onKeyPress(isBigHit);
                     } else if (data.includes("value 0")) {
                         root.onKeyRelease(isBigHit);
                     } else if (data.includes("value 2")) {
                         root.onKeyPress(isBigHit, true);
+                    }
+                } else if (data.includes("KEYBOARD_KEY")) {
+                    const isBigHit = data.includes("KEY_SPACE") || data.includes("KEY_ENTER") || data.includes("KEY_KPENTER");
+                    if (data.includes("pressed")) {
+                        root.onKeyPress(isBigHit);
+                    } else if (data.includes("released")) {
+                        root.onKeyRelease(isBigHit);
                     }
                 }
             }
@@ -263,6 +312,22 @@ PluginComponent {
                         opacity: 0.8
                     }
 
+                    // Keyboard Selection
+                    Row {
+                        width: parent.width
+                        height: 36
+                        spacing: Theme.spacingM
+                        DankIcon { name: "keyboard"; size: 20; color: Theme.primary; anchors.verticalCenter: parent.verticalCenter }
+                        DankDropdown {
+                            id: keyboardDropdown
+                            width: parent.width - 40
+                            options: root.deviceOptions
+                            currentValue: root.selectedDeviceName
+                            compactMode: true
+                            onValueChanged: v => root.saveSetting("selectedDevicePath", root.deviceMap[v])
+                        }
+                    }
+
                     // Size Setting
                     Row {
                         width: parent.width
@@ -315,15 +380,15 @@ PluginComponent {
                             name: "restore"
                             size: 18
                             color: Theme.primary
-                            opacity: root.idleTimeout !== 1000 ? 1.0 : 0.3
+                            opacity: root.idleTimeout !== 2000 ? 1.0 : 0.3
                             anchors.verticalCenter: parent.verticalCenter
                             MouseArea {
                                 anchors.fill: parent
-                                enabled: root.idleTimeout !== 1000
+                                enabled: root.idleTimeout !== 2000
                                 cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
                                 onClicked: {
-                                    root.saveSetting("idleTimeout", 1000);
-                                    timeoutSlider.value = 1000;
+                                    root.saveSetting("idleTimeout", 2000);
+                                    timeoutSlider.value = 2000;
                                 }
                             }
                         }
