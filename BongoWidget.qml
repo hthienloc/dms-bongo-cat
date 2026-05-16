@@ -57,11 +57,13 @@ PluginComponent {
 
     function onKeyPress(isBigHit, isRepeat = false) {
         isWaiting = false;
+        releaseTimer.stop(); // Don't go idle if we are pressing/repeating
+        
         let now = Date.now();
         
         if (!isRepeat) {
-            // Debounce: ignore multiple 'press' signals within 50ms to avoid double-taps on bounce/hold
-            if (now - _lastPressTime > 50) {
+            // Debounce: ignore multiple 'press' signals within 40ms to avoid double-taps on mechanical bounce
+            if (now - _lastPressTime > 40) {
                 pressedKeysCount++;
                 if (isBigHit) {
                     catState = 3;
@@ -72,7 +74,7 @@ PluginComponent {
                 _lastPressTime = now;
             }
         } else if (catState === 0) {
-            // Re-assert down state on repeat if watchdog triggered
+            // Re-assert down state on repeat if we somehow went idle (watchdog)
             if (isBigHit) {
                 catState = 3;
             } else {
@@ -80,7 +82,6 @@ PluginComponent {
             }
         }
 
-        idleTimer.interval = root.idleTimeout;
         idleTimer.restart();
         waitingTimer.restart();
     }
@@ -89,14 +90,17 @@ PluginComponent {
         pressedKeysCount = Math.max(0, pressedKeysCount - 1);
         
         if (pressedKeysCount === 0) {
-            // Use a short delay (50ms) to filter out bounces before going idle
-            idleTimer.interval = 50;
-            idleTimer.restart();
-        } else {
-            // Still holding other keys, keep watchdog interval
-            idleTimer.interval = root.idleTimeout;
-            idleTimer.restart();
+            // Wait 150ms before returning to idle to bridge gaps in repeat events or ghost releases
+            releaseTimer.restart();
         }
+        
+        idleTimer.restart();
+    }
+
+    Timer {
+        id: releaseTimer
+        interval: 150
+        onTriggered: catState = 0
     }
 
     Timer {
@@ -105,7 +109,6 @@ PluginComponent {
         onTriggered: {
             catState = 0;
             pressedKeysCount = 0; // Watchdog: reset count if idle
-            interval = root.idleTimeout; // Reset to user setting for next call
         }
     }
 
