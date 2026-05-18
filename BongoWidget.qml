@@ -33,7 +33,7 @@ PluginComponent {
     }
 
     readonly property real catSize: (pluginData?.catSizePercent ?? 100) / 100.0
-    readonly property int idleTimeout: pluginData?.idleTimeout ?? 250
+    readonly property int idleTimeout: pluginData?.idleTimeout ?? 100
     readonly property bool enableBlinking: pluginData?.enableBlinking ?? true
     readonly property int waitingTimeout: pluginData?.waitingTimeout ?? 5000
     readonly property bool activeColor: pluginData?.activeColor ?? false
@@ -372,15 +372,15 @@ PluginComponent {
                                 name: "restore"
                                 size: 18
                                 color: Theme.primary
-                                opacity: root.idleTimeout !== 250 ? 1.0 : 0.3
+                                opacity: root.idleTimeout !== 100 ? 1.0 : 0.3
                                 anchors.verticalCenter: parent.verticalCenter
                                 MouseArea {
                                     anchors.fill: parent
-                                    enabled: root.idleTimeout !== 250
+                                    enabled: root.idleTimeout !== 100
                                     cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
                                     onClicked: {
-                                        root.saveSetting("idleTimeout", 250);
-                                        timeoutSlider.value = 250;
+                                        root.saveSetting("idleTimeout", 100);
+                                        timeoutSlider.value = 100;
                                     }
                                 }
                             }
