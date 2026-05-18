@@ -226,7 +226,7 @@ PluginComponent {
     verticalBarPill: horizontalBarPill
 
     popoutWidth: 280
-    popoutHeight: 320
+    popoutHeight: 345
 
     popoutContent: Component {
         PopoutComponent {
@@ -298,66 +298,90 @@ PluginComponent {
                     }
 
                     // Size Setting
-                    Row {
+                    Column {
                         width: parent.width
-                        height: 48
-                        spacing: Theme.spacingM
-                        DankIcon { name: "aspect_ratio"; size: 20; color: Theme.primary; anchors.verticalCenter: parent.verticalCenter }
-                        DankSlider {
-                            id: sizeSlider
-                            width: parent.width - 80
-                            value: root.catSize * 100
-                            minimum: 50; maximum: 200
-                            centerMinimum: false; unit: "%"; showValue: true
-                            onSliderValueChanged: v => root.saveSetting("catSizePercent", v)
-                            anchors.verticalCenter: parent.verticalCenter
+                        spacing: 2
+
+                        StyledText {
+                            text: "Cat Size"
+                            font.pixelSize: Theme.fontSizeExtraSmall
+                            font.weight: Font.Medium
+                            color: Theme.surfaceVariantText
                         }
-                        DankIcon {
-                            name: "restore"
-                            size: 18
-                            color: Theme.primary
-                            opacity: (root.catSize * 100) !== 100 ? 1.0 : 0.3
-                            anchors.verticalCenter: parent.verticalCenter
-                            MouseArea {
-                                anchors.fill: parent
-                                enabled: (root.catSize * 100) !== 100
-                                cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                                onClicked: {
-                                    root.saveSetting("catSizePercent", 100);
-                                    sizeSlider.value = 100;
+
+                        Row {
+                            width: parent.width
+                            height: 32
+                            spacing: Theme.spacingM
+                            DankIcon { name: "aspect_ratio"; size: 18; color: Theme.primary; anchors.verticalCenter: parent.verticalCenter }
+                            DankSlider {
+                                id: sizeSlider
+                                width: parent.width - 80
+                                value: root.catSize * 100
+                                minimum: 50; maximum: 200
+                                centerMinimum: false; unit: "%"; showValue: true
+                                onSliderValueChanged: v => root.saveSetting("catSizePercent", v)
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                            DankIcon {
+                                name: "restore"
+                                size: 18
+                                color: Theme.primary
+                                opacity: (root.catSize * 100) !== 100 ? 1.0 : 0.3
+                                anchors.verticalCenter: parent.verticalCenter
+                                MouseArea {
+                                    anchors.fill: parent
+                                    enabled: (root.catSize * 100) !== 100
+                                    cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                    onClicked: {
+                                        root.saveSetting("catSizePercent", 100);
+                                        sizeSlider.value = 100;
+                                    }
                                 }
                             }
                         }
                     }
 
-                    // Idle Timeout
-                    Row {
+                    // Paw Release Speed (Snappiness)
+                    Column {
                         width: parent.width
-                        height: 48
-                        spacing: Theme.spacingM
-                        DankIcon { name: "timer"; size: 20; color: Theme.primary; anchors.verticalCenter: parent.verticalCenter }
-                        DankSlider {
-                            id: timeoutSlider
-                            width: parent.width - 80
-                            value: root.idleTimeout
-                            minimum: 100; maximum: 1000
-                            centerMinimum: false; unit: "ms"; showValue: true
-                            onSliderValueChanged: v => root.saveSetting("idleTimeout", v)
-                            anchors.verticalCenter: parent.verticalCenter
+                        spacing: 2
+
+                        StyledText {
+                            text: "Paw Release Delay (Snappiness)"
+                            font.pixelSize: Theme.fontSizeExtraSmall
+                            font.weight: Font.Medium
+                            color: Theme.surfaceVariantText
                         }
-                        DankIcon {
-                            name: "restore"
-                            size: 18
-                            color: Theme.primary
-                            opacity: root.idleTimeout !== 250 ? 1.0 : 0.3
-                            anchors.verticalCenter: parent.verticalCenter
-                            MouseArea {
-                                anchors.fill: parent
-                                enabled: root.idleTimeout !== 250
-                                cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                                onClicked: {
-                                    root.saveSetting("idleTimeout", 250);
-                                    timeoutSlider.value = 250;
+
+                        Row {
+                            width: parent.width
+                            height: 32
+                            spacing: Theme.spacingM
+                            DankIcon { name: "timer"; size: 18; color: Theme.primary; anchors.verticalCenter: parent.verticalCenter }
+                            DankSlider {
+                                id: timeoutSlider
+                                width: parent.width - 80
+                                value: root.idleTimeout
+                                minimum: 10; maximum: 500
+                                centerMinimum: false; unit: "ms"; showValue: true
+                                onSliderValueChanged: v => root.saveSetting("idleTimeout", v)
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                            DankIcon {
+                                name: "restore"
+                                size: 18
+                                color: Theme.primary
+                                opacity: root.idleTimeout !== 250 ? 1.0 : 0.3
+                                anchors.verticalCenter: parent.verticalCenter
+                                MouseArea {
+                                    anchors.fill: parent
+                                    enabled: root.idleTimeout !== 250
+                                    cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                    onClicked: {
+                                        root.saveSetting("idleTimeout", 250);
+                                        timeoutSlider.value = 250;
+                                    }
                                 }
                             }
                         }
@@ -422,6 +446,11 @@ PluginComponent {
                     HintItem {
                         icon: "mouse"
                         text: "Right-click bar icon to toggle sleep mode."
+                    }
+
+                    HintItem {
+                        icon: "timer"
+                        text: "Decrease Paw Release Delay for extreme snappiness at high WPM."
                     }
                 }
             }
