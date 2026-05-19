@@ -39,10 +39,8 @@ git clone https://github.com/hthienloc/dms-bongo-cat ~/.config/DankMaterialShell
 ## Requirements
 
 - `evtest` - Keyboard event monitoring
+- `libinput` - Keyboard detection
 - User must be in `input` group: `sudo usermod -aG input $USER`
-## License
-
-MIT
 
 ## Roadmap / TODO
 
@@ -51,5 +49,7 @@ MIT
 - [ ] **Performance Metrics (WPM):** Optional overlay showing real-time typing speed and accuracy.
 - [ ] **Extended Skin Library:** Support for loading custom SVG/PNG skins and different "cat" variants (e.g., Robot-cat, Ghost-cat).
 - [ ] **Audio Feedback:** Optional haptic-like mechanical keyboard sound effects on every keystroke.
+- [ ] 
+## License
 
 MIT
