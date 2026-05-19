@@ -36,6 +36,11 @@ git clone https://github.com/hthienloc/dms-bongo-cat ~/.config/DankMaterialShell
 | Left click | Open settings |
 | Right click | Toggle sleep mode |
 
+### Keyboard Selection
+You can select a specific keyboard from the dropdown menu in the settings. This is useful if you have multiple input devices and want the cat to only react to a specific one.
+
+**Note:** The device filtering is currently based on a manual exclusion list. If you have a peripheral (like a mouse or headset) that is incorrectly identified as a keyboard and appears in the list, please **open an issue** with the device name so it can be added to the exclusion list.
+
 ## Requirements
 
 - `evtest` - Keyboard event monitoring

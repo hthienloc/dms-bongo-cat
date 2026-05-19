@@ -25,6 +25,18 @@ PluginComponent {
     property var deviceOptions: ["All Keyboards (Auto)"]
     property var deviceMap: ({ "All Keyboards (Auto)": "all" })
     readonly property string selectedDevicePath: pluginData?.selectedDevicePath ?? "all"
+    onSelectedDevicePathChanged: {
+        console.log("[BongoCat] Device selection changed to:", selectedDevicePath);
+        inputProc.running = false;
+        inputRestartTimer.restart();
+    }
+
+    Timer {
+        id: inputRestartTimer
+        interval: 200
+        onTriggered: inputProc.running = true
+    }
+
     readonly property string selectedDeviceName: {
         for (let name in deviceMap) {
             if (deviceMap[name] === selectedDevicePath) return name;
@@ -115,41 +127,57 @@ PluginComponent {
         onTriggered: isBlinking = false
     }
 
-    Process {
-        id: deviceFetcher
-        command: ["bash", "-c", "libinput list-devices | grep -E 'Device:|Kernel:|Capabilities:' | awk '/Device:/ {name=$2; for(i=3;i<=NF;i++) name=name\" \"$i} /Kernel:/ {path=$2} /Capabilities:/ {if($0 ~ /keyboard/) print name \"|\" path}'"]
-        stdout: StdioCollector {
-            onRead: text => {
-                const output = text.trim();
-                if (!output) return;
-                let options = ["All Keyboards (Auto)"];
-                let map = { "All Keyboards (Auto)": "all" };
-                output.split("\n").forEach(line => {
-                    const parts = line.split("|");
-                    if (parts.length === 2) {
-                        const name = parts[0];
-                        const path = parts[1];
-                        let uniqueName = name;
-                        let i = 2;
-                        while (options.includes(uniqueName)) {
-                            uniqueName = name + " (" + i + ")";
-                            i++;
-                        }
-                        options.push(uniqueName);
-                        map[uniqueName] = path;
+    function fetchDevices() {
+        const cmd = "cat /proc/bus/input/devices | awk '/^N: Name=/ { n=$0; sub(/^N: Name=/, \"\", n); sub(/^\"/, \"\", n); sub(/\"$/, \"\", n); } /^H: Handlers=/ { nl=tolower(n); if ($0 ~ /kbd/ && $0 !~ /mouse/ && nl !~ /power button|video bus|speaker|headphone|lid switch|touchpad|extra buttons|uinput|server|hitune|inphic|instant/) { for(i=1;i<=NF;i++) if($i ~ /event/) { print n \"|\" \"/dev/input/\" $i; next } } }'";
+        
+        Proc.runCommand("bongoCat.fetchDevices", ["bash", "-c", cmd], (stdout, exitCode) => {
+            if (exitCode !== 0) return;
+            const output = stdout.trim();
+            if (!output) return;
+
+            let options = ["All Keyboards (Auto)"];
+            let map = { "All Keyboards (Auto)": "all" };
+            let seenPaths = new Set();
+            seenPaths.add("all");
+
+            output.split("\n").forEach(line => {
+                const parts = line.split("|");
+                if (parts.length === 2) {
+                    const name = parts[0].trim();
+                    const path = parts[1].trim();
+                    if (seenPaths.has(path)) return;
+                    seenPaths.add(path);
+
+                    let uniqueName = name;
+                    let i = 2;
+                    while (options.includes(uniqueName)) {
+                        uniqueName = name + " (" + i + ")";
+                        i++;
                     }
-                });
-                root.deviceOptions = options;
-                root.deviceMap = map;
-            }
-        }
+                    options.push(uniqueName);
+                    map[uniqueName] = path;
+                }
+            });
+            root.deviceOptions = options;
+            root.deviceMap = map;
+        });
     }
 
-    Component.onCompleted: deviceFetcher.running = true
+    Component.onCompleted: fetchDevices()
+
+    // Refresh devices when popout is triggered
+    function triggerPopoutWithRefresh() {
+        fetchDevices();
+        root.triggerPopout();
+    }
 
     Process {
         id: inputProc
-        command: selectedDevicePath === "all" ? ["libinput", "debug-events"] : ["evtest", selectedDevicePath]
+        command: {
+            const cmd = selectedDevicePath === "all" ? ["libinput", "debug-events"] : ["evtest", selectedDevicePath];
+            console.log("[BongoCat] Starting input process with command:", JSON.stringify(cmd));
+            return cmd;
+        }
         running: true
 
         stdout: SplitParser {
@@ -200,7 +228,7 @@ PluginComponent {
                         console.log("[BongoCat] Right click - forceSleep:", root.forceSleep);
                         if (root.forceSleep) root.isWaiting = true;
                     } else {
-                        root.triggerPopout();
+                        root.triggerPopoutWithRefresh();
                     }
                 }
                 onPressAndHold: mouse => {
@@ -226,7 +254,7 @@ PluginComponent {
     verticalBarPill: horizontalBarPill
 
     popoutWidth: 280
-    popoutHeight: 345
+    popoutHeight: 450
 
     popoutContent: Component {
         PopoutComponent {
@@ -292,6 +320,7 @@ PluginComponent {
                             width: parent.width - 40
                             options: root.deviceOptions
                             currentValue: root.selectedDeviceName
+                            maxPopupHeight: 200
                             compactMode: true
                             onValueChanged: v => root.saveSetting("selectedDevicePath", root.deviceMap[v])
                         }
