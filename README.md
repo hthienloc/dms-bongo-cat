@@ -43,8 +43,8 @@ You can select a specific keyboard from the dropdown menu in the settings. This 
 
 ## Requirements
 
-- `evtest` - Keyboard event monitoring
-- `libinput` - Keyboard detection
+- `evtest` - Primary tool for monitoring specific keyboard events.
+- `libinput` - Required only for **"All Keyboards (Auto)"** mode.
 - User must be in `input` group: `sudo usermod -aG input $USER`
 
 ## Roadmap / TODO
