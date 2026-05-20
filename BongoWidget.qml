@@ -19,8 +19,6 @@ PluginComponent {
     property bool isBlinking: false
     property bool isWaiting: true
     property bool forceSleep: false
-    property int pressedKeysCount: 0
-    property real _lastPressTime: 0
 
     property var deviceOptions: ["All Keyboards (Auto)"]
     property var deviceMap: ({ "All Keyboards (Auto)": "all" })
@@ -45,9 +43,9 @@ PluginComponent {
     }
 
     readonly property real catSize: (pluginData?.catSizePercent ?? 100) / 100.0
-    readonly property int idleTimeout: pluginData?.idleTimeout ?? 100
     readonly property bool enableBlinking: pluginData?.enableBlinking ?? true
     readonly property int waitingTimeout: pluginData?.waitingTimeout ?? 5000
+    readonly property int pawHoldTime: pluginData?.pawHoldTime ?? 0
     readonly property bool activeColor: pluginData?.activeColor ?? false
 
     function saveSetting(key, value) {
@@ -76,37 +74,71 @@ PluginComponent {
     readonly property string blinkGlyph: "gh"
     readonly property string sleepGlyph: "ef"
 
-    function onKeyPress(isBigHit, isRepeat = false) {
+    function onKeyPress(isBigHit) {
         isWaiting = false;
-        
+        let targetState;
         if (isBigHit) {
-            catState = 3;
+            targetState = 3;
         } else {
-            leftWasLast = !leftWasLast;
-            catState = leftWasLast ? 1 : 2;
+            if (catState !== 0) {
+                targetState = 3;
+            } else {
+                leftWasLast = !leftWasLast;
+                targetState = leftWasLast ? 1 : 2;
+            }
         }
-
-        idleTimer.restart();
+        catState = targetState;
         waitingTimer.restart();
     }
 
     function onKeyRelease(isBigHit) {
-        idleTimer.restart();
+        let targetState;
+        if (isBigHit) {
+            targetState = 0;
+        } else {
+            if (catState === 3) {
+                targetState = leftWasLast ? 1 : 2;
+            } else {
+                targetState = 0;
+            }
+        }
+        if (root.pawHoldTime > 0) {
+            pawHoldTimer.interval = root.pawHoldTime;
+            pawHoldTimer.restart();
+        } else {
+            catState = targetState;
+        }
     }
 
-    Timer {
-        id: idleTimer
-        interval: root.idleTimeout
-        onTriggered: {
-            catState = 0;
-            pressedKeysCount = 0; 
+    function onKeyRepeat(isBigHit) {
+        isWaiting = false;
+        let targetState;
+        if (catState !== 0) {
+            targetState = catState;
+        } else {
+            if (isBigHit) {
+                targetState = 3;
+            } else {
+                targetState = leftWasLast ? 1 : 2;
+            }
         }
+        catState = targetState;
+        waitingTimer.restart();
     }
 
     Timer {
         id: waitingTimer
         interval: root.waitingTimeout
         onTriggered: isWaiting = true
+    }
+
+    Timer {
+        id: pawHoldTimer
+        onTriggered: {
+            if (catState !== 0) {
+                catState = 0;
+            }
+        }
     }
 
     Timer {
@@ -190,7 +222,7 @@ PluginComponent {
                     } else if (data.includes("value 0")) {
                         root.onKeyRelease(isBigHit);
                     } else if (data.includes("value 2")) {
-                        root.onKeyPress(isBigHit, true);
+                        root.onKeyRepeat(isBigHit);
                     }
                 } else if (data.includes("KEYBOARD_KEY")) {
                     const isBigHit = data.includes("KEY_SPACE") || data.includes("KEY_ENTER") || data.includes("KEY_KPENTER");
@@ -198,6 +230,8 @@ PluginComponent {
                         root.onKeyPress(isBigHit);
                     } else if (data.includes("released")) {
                         root.onKeyRelease(isBigHit);
+                    } else if (data.includes("repeat")) {
+                        root.onKeyRepeat(isBigHit);
                     }
                 }
             }
@@ -246,7 +280,7 @@ PluginComponent {
                 font.pixelSize: 24 * root.catSize
                 color: root.forceSleep ? Theme.surfaceVariantText : ((root.activeColor && !root.isWaiting) ? Theme.primary : Theme.surfaceText)
                 opacity: root.forceSleep ? 0.5 : 1.0
-                text: root.forceSleep ? root.sleepGlyph : (root.isWaiting ? root.sleepGlyph : (root.isBlinking ? root.blinkGlyph : root.glyphMap[root.catState]))
+                text: root.forceSleep ? root.sleepGlyph : (root.isWaiting ? root.sleepGlyph : (root.isBlinking && root.catState === 0 ? root.blinkGlyph : root.glyphMap[root.catState]))
             }
         }
     }
@@ -292,7 +326,7 @@ PluginComponent {
                         font.pixelSize: 80
                         font.letterSpacing: -2
                         color: popout.isActive ? Theme.onPrimaryContainer : Theme.surfaceText
-                        text: root.forceSleep ? root.sleepGlyph : (!popout.isActive ? root.sleepGlyph : (root.isBlinking ? root.blinkGlyph : root.glyphMap[root.catState]))
+                        text: root.forceSleep ? root.sleepGlyph : (!popout.isActive ? root.sleepGlyph : (root.isBlinking && root.catState === 0 ? root.blinkGlyph : root.glyphMap[root.catState]))
                     }
                 }
 
@@ -371,13 +405,13 @@ PluginComponent {
                         }
                     }
 
-                    // Paw Release Speed (Snappiness)
+                    // Paw Hold Time
                     Column {
                         width: parent.width
                         spacing: 2
 
                         StyledText {
-                            text: "Paw Release Delay (Snappiness)"
+                            text: "Paw Hold Time"
                             font.pixelSize: Theme.fontSizeExtraSmall
                             font.weight: Font.Medium
                             color: Theme.surfaceVariantText
@@ -389,27 +423,27 @@ PluginComponent {
                             spacing: Theme.spacingM
                             DankIcon { name: "timer"; size: 18; color: Theme.primary; anchors.verticalCenter: parent.verticalCenter }
                             DankSlider {
-                                id: timeoutSlider
+                                id: pawHoldSlider
                                 width: parent.width - 80
-                                value: root.idleTimeout
-                                minimum: 10; maximum: 500
+                                value: root.pawHoldTime
+                                minimum: 0; maximum: 100
                                 centerMinimum: false; unit: "ms"; showValue: true
-                                onSliderValueChanged: v => root.saveSetting("idleTimeout", v)
+                                onSliderValueChanged: v => root.saveSetting("pawHoldTime", v)
                                 anchors.verticalCenter: parent.verticalCenter
                             }
                             DankIcon {
                                 name: "restore"
                                 size: 18
                                 color: Theme.primary
-                                opacity: root.idleTimeout !== 100 ? 1.0 : 0.3
+                                opacity: root.pawHoldTime !== 0 ? 1.0 : 0.3
                                 anchors.verticalCenter: parent.verticalCenter
                                 MouseArea {
                                     anchors.fill: parent
-                                    enabled: root.idleTimeout !== 100
+                                    enabled: root.pawHoldTime !== 0
                                     cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
                                     onClicked: {
-                                        root.saveSetting("idleTimeout", 100);
-                                        timeoutSlider.value = 100;
+                                        root.saveSetting("pawHoldTime", 0);
+                                        pawHoldSlider.value = 0;
                                     }
                                 }
                             }
@@ -475,11 +509,6 @@ PluginComponent {
                     HintItem {
                         icon: "mouse"
                         text: "Right-click bar icon to toggle sleep mode."
-                    }
-
-                    HintItem {
-                        icon: "timer"
-                        text: "Decrease Paw Release Delay for extreme snappiness at high WPM."
                     }
                 }
             }
