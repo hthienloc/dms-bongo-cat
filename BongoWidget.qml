@@ -43,6 +43,7 @@ PluginComponent {
     }
 
     readonly property real catSize: (pluginData?.catSizePercent ?? 100) / 100.0
+    readonly property int catYOffset: pluginData?.catYOffset ?? 0
     readonly property bool enableBlinking: pluginData?.enableBlinking ?? true
     readonly property int waitingTimeout: pluginData?.waitingTimeout ?? 5000
     readonly property int pawHoldTime: pluginData?.pawHoldTime ?? 0
@@ -306,6 +307,7 @@ PluginComponent {
             Text {
                 id: catLabel
                 anchors.centerIn: parent
+                anchors.verticalCenterOffset: root.catYOffset
                 font.family: bongoFont.name
                 font.pixelSize: 24 * root.catSize
                 color: root.forceSleep ? Theme.surfaceVariantText : ((root.activeColor && !root.isWaiting) ? Theme.primary : Theme.surfaceText)
@@ -429,6 +431,51 @@ PluginComponent {
                                     onClicked: {
                                         root.saveSetting("catSizePercent", 100);
                                         sizeSlider.value = 100;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Vertical Offset
+                    Column {
+                        width: parent.width
+                        spacing: 2
+
+                        StyledText {
+                            text: "Vertical Offset"
+                            font.pixelSize: Theme.fontSizeExtraSmall
+                            font.weight: Font.Medium
+                            color: Theme.surfaceVariantText
+                        }
+
+                        Row {
+                            width: parent.width
+                            height: 32
+                            spacing: Theme.spacingM
+                            DankIcon { name: "swap_vert"; size: 18; color: Theme.primary; anchors.verticalCenter: parent.verticalCenter }
+                            DankSlider {
+                                id: offsetSlider
+                                width: parent.width - 80
+                                value: root.catYOffset
+                                minimum: -10; maximum: 10
+                                centerMinimum: false; unit: "px"; showValue: true
+                                onSliderValueChanged: v => root.saveSetting("catYOffset", v)
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                            DankIcon {
+                                name: "restore"
+                                size: 18
+                                color: Theme.primary
+                                opacity: root.catYOffset !== 0 ? 1.0 : 0.3
+                                anchors.verticalCenter: parent.verticalCenter
+                                MouseArea {
+                                    anchors.fill: parent
+                                    enabled: root.catYOffset !== 0
+                                    cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                    onClicked: {
+                                        root.saveSetting("catYOffset", 0);
+                                        offsetSlider.value = 0;
                                     }
                                 }
                             }
