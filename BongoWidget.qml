@@ -160,7 +160,37 @@ PluginComponent {
     }
 
     function fetchDevices() {
-        const cmd = "cat /proc/bus/input/devices | awk '/^N: Name=/ { n=$0; sub(/^N: Name=/, \"\", n); sub(/^\"/, \"\", n); sub(/\"$/, \"\", n); } /^H: Handlers=/ { nl=tolower(n); if ($0 ~ /kbd/ && $0 !~ /mouse/ && nl !~ /power button|video bus|speaker|headphone|lid switch|touchpad|extra buttons|uinput|server|hitune|inphic|instant/) { for(i=1;i<=NF;i++) if($i ~ /event/) { print n \"|\" \"/dev/input/\" $i; next } } }'";
+        // Devices whose lowercase name matches this regex are always included,
+        // even if they would otherwise be filtered by the exclude list.
+        const includePattern = "kanata";
+
+        const excludePattern = [
+            "power button", "video bus", "speaker", "headphone",
+            "lid switch", "touchpad", "extra buttons", "uinput",
+            "server", "hitune", "inphic", "instant"
+        ].join("|");
+
+        const awkScript = `
+            /^N: Name=/ {
+                name = $0
+                sub(/^N: Name="/, "", name)
+                sub(/"$/, "", name)
+            }
+            /^H: Handlers=/ {
+                lower = tolower(name)
+                include = (lower ~ /${includePattern}/)
+                exclude = (lower ~ /${excludePattern}/)
+                if ($0 ~ /kbd/ && (include || ($0 !~ /mouse/ && !exclude))) {
+                    for (i = 1; i <= NF; i++) {
+                        if ($i ~ /^event[0-9]+$/) {
+                            print name "|/dev/input/" $i
+                            next
+                        }
+                    }
+                }
+            }
+        `;
+        const cmd = `awk '${awkScript}' /proc/bus/input/devices`;
         
         Proc.runCommand("bongoCat.fetchDevices", ["bash", "-c", cmd], (stdout, exitCode) => {
             if (exitCode !== 0) return;
