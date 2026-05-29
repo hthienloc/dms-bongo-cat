@@ -2,15 +2,28 @@ import QtQuick
 import QtQuick.Controls
 import Quickshell
 import Quickshell.Io
+import Quickshell.X11
+import Quickshell.Wayland
 import qs.Common
-import qs.Services
 import qs.Widgets
+import qs.Services
 import qs.Modules.Plugins
-import "../dms-common"
+import dms.common 1.0
 
 
 PluginComponent {
     id: root
+    pluginId: "bongoCat"
+    pluginService: PluginService
+
+    // Control Center Integration
+    ccWidgetIcon: "pets"
+    ccWidgetPrimaryText: I18n.tr("Bongo Cat")
+    ccWidgetSecondaryText: isSleeping ? I18n.tr("Sleeping") : I18n.tr("Active")
+    ccWidgetIsActive: !isSleeping
+    ccDetailHeight: 0 // No detail view needed, simple toggle
+    onCcWidgetToggled: isSleeping = !isSleeping
+
     readonly property bool showHints: pluginData.showHints ?? true
 
 
