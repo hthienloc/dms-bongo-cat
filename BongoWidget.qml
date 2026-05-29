@@ -8,7 +8,7 @@ import qs.Common
 import qs.Widgets
 import qs.Services
 import qs.Modules.Plugins
-import dms.common 1.0
+import "./dms-common"
 
 
 PluginComponent {
