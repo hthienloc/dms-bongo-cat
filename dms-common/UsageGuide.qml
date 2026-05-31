@@ -5,8 +5,19 @@ import qs.Widgets
 Column {
     id: root
     width: parent.width
-    spacing: Theme.spacingS
+    spacing: expanded ? Theme.spacingS : 0 // Giảm spacing khi đóng để tránh khựng
     property alias items: repeater.model
+
+    property bool expanded: true
+
+    clip: true
+    height: expanded ? implicitHeight : 0
+    visible: height > 0
+
+    opacity: expanded ? 1 : 0
+    Behavior on opacity {
+        NumberAnimation { duration: Appearance.anim.durations.quick }
+    }
 
     Repeater {
         id: repeater

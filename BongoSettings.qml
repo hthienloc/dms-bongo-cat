@@ -10,12 +10,88 @@ PluginSettings {
     pluginId: "bongoCat"
 
     SettingsCard {
-        SectionTitle { text: I18n.tr("Usage Guide"); icon: "menu_book" }
-        UsageGuide {
-            items: [
-                I18n.tr("Click the cat to open settings."),
-                I18n.tr("Right-click to toggle sleep mode.")
-            ]
+        id: appearanceSection
+        SectionTitle { 
+            text: I18n.tr("Appearance")
+            icon: "palette" 
+            showReset: catSizePercent.isDirty || activeColor.isDirty || enableBlinking.isDirty
+            onResetClicked: {
+                catSizePercent.resetToDefault();
+                activeColor.resetToDefault();
+                enableBlinking.resetToDefault();
+            }
+        }
+
+        SliderSettingPlus {
+            id: catSizePercent
+            settingKey: "catSizePercent"
+            label: I18n.tr("Cat Size")
+            defaultValue: 100
+            minimum: 50
+            maximum: 200
+            unit: "%"
+            leftLabel: "50%"
+            rightLabel: "200%"
+        }
+
+        Separator {}
+
+        ToggleSettingPlus {
+            id: activeColor
+            settingKey: "activeColor"
+            label: I18n.tr("Use Primary Color")
+            description: I18n.tr("Apply the system primary color to the cat instead of classic black and white.")
+            defaultValue: false
+        }
+
+        Separator {}
+
+        ToggleSettingPlus {
+            id: enableBlinking
+            settingKey: "enableBlinking"
+            label: I18n.tr("Enable Blinking")
+            defaultValue: true
+        }
+    }
+
+    SettingsCard {
+        id: inputSection
+        SectionTitle { 
+            text: I18n.tr("Input & Behavior")
+            icon: "keyboard" 
+            showReset: waitingTimeout.isDirty || pawHoldTime.isDirty
+            onResetClicked: {
+                waitingTimeout.resetToDefault();
+                pawHoldTime.resetToDefault();
+            }
+        }
+
+        SliderSettingPlus {
+            id: waitingTimeout
+            settingKey: "waitingTimeout"
+            label: I18n.tr("Sleep Timeout")
+            description: I18n.tr("Inactivity time before the cat falls asleep.")
+            minimum: 1
+            maximum: 10
+            unit: "s"
+            defaultValue: 5
+            leftLabel: "1s"
+            rightLabel: "10s"
+        }
+
+        Separator {}
+
+        SliderSettingPlus {
+            id: pawHoldTime
+            settingKey: "pawHoldTime"
+            label: I18n.tr("Paw Hold Duration")
+            description: I18n.tr("How long the paws stay down after a key press (0 for instant).")
+            minimum: 0
+            maximum: 100
+            unit: "ms"
+            defaultValue: 0
+            leftLabel: "0ms"
+            rightLabel: "100ms"
         }
     }
 
@@ -23,7 +99,7 @@ PluginSettings {
         SectionTitle { text: I18n.tr("Setup"); icon: "build" }
 
         InfoText {
-            text: I18n.tr("Add your user to the 'input' group to detect mouse/keyboard activity:")
+            text: I18n.tr("Add your user to the 'input' group to detect keyboard activity:")
         }
 
         Column {
@@ -50,13 +126,40 @@ PluginSettings {
     }
 
     SettingsCard {
-        SectionTitle { text: I18n.tr("Interface"); icon: "display_settings" }
+        id: behaviorSection
+        SectionTitle { 
+            text: I18n.tr("Behavior")
+            icon: "settings" 
+            showReset: showHints.isDirty
+            onResetClicked: {
+                showHints.resetToDefault();
+            }
+        }
 
-        ToggleSetting {
+        ToggleSettingPlus {
+            id: showHints
             settingKey: "showHints"
             label: I18n.tr("Show Hints")
-            description: I18n.tr("Display helpful usage tips and shortcuts at the bottom of the popout.")
             defaultValue: true
+        }
+    }
+
+    SettingsCard {
+        SectionTitle { 
+            id: usageTitle
+            text: I18n.tr("Usage Guide")
+            icon: "menu_book" 
+            collapsible: true
+            settingKey: "usageGuideExpanded"
+        }
+
+        UsageGuide {
+            expanded: usageTitle.isExpanded
+            items: [
+                I18n.tr("<b>Left-click</b> the cat to open the settings popout."),
+                I18n.tr("<b>Right-click</b> the cat to manually toggle <b>Sleep Mode</b>."),
+                I18n.tr("The cat will automatically tap its paws as you type.")
+            ]
         }
     }
 

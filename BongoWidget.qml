@@ -58,7 +58,8 @@ PluginComponent {
     readonly property real catSize: (pluginData?.catSizePercent ?? 100) / 100.0
     readonly property int catYOffset: pluginData?.catYOffset ?? 0
     readonly property bool enableBlinking: pluginData?.enableBlinking ?? true
-    readonly property int waitingTimeout: pluginData?.waitingTimeout ?? 5000
+    readonly property int waitingTimeout: (pluginData?.waitingTimeout ?? 5) * 1000
+
     readonly property int pawHoldTime: pluginData?.pawHoldTime ?? 0
     readonly property bool activeColor: pluginData?.activeColor ?? false
 
@@ -444,6 +445,51 @@ PluginComponent {
                                     onClicked: {
                                         root.saveSetting("catSizePercent", 100);
                                         sizeSlider.value = 100;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Sleep Timeout
+                    Column {
+                        width: parent.width
+                        spacing: 2
+
+                        StyledText {
+                            text: "Sleep Timeout"
+                            font.pixelSize: Theme.fontSizeExtraSmall
+                            font.weight: Font.Medium
+                            color: Theme.surfaceVariantText
+                        }
+
+                        Row {
+                            width: parent.width
+                            height: 32
+                            spacing: Theme.spacingM
+                            DankIcon { name: "bedtime"; size: 18; color: Theme.primary; anchors.verticalCenter: parent.verticalCenter }
+                            DankSlider {
+                                id: sleepSlider
+                                width: parent.width - 80
+                                value: root.waitingTimeout / 1000
+                                minimum: 1; maximum: 10
+                                centerMinimum: false; unit: "s"; showValue: true
+                                onSliderValueChanged: v => root.saveSetting("waitingTimeout", v)
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                            DankIcon {
+                                name: "restore"
+                                size: 18
+                                color: Theme.primary
+                                opacity: (root.waitingTimeout / 1000) !== 5 ? 1.0 : 0.3
+                                anchors.verticalCenter: parent.verticalCenter
+                                MouseArea {
+                                    anchors.fill: parent
+                                    enabled: (root.waitingTimeout / 1000) !== 5
+                                    cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                    onClicked: {
+                                        root.saveSetting("waitingTimeout", 5);
+                                        sleepSlider.value = 5;
                                     }
                                 }
                             }

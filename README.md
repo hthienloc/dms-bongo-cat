@@ -19,7 +19,6 @@ git clone https://github.com/hthienloc/dms-bongo-cat ~/.config/DankMaterialShell
 ## Features
 
 - **Real-time typing** - Cat reacts to your keyboard input
-- **Big hit detection** - Space/Enter triggers double-paw animation
 - **Blink & sleep** - Cat blinks when active, sleeps after inactivity
 - **Adjustable size** - Customize cat size from 50% to 200%
 
