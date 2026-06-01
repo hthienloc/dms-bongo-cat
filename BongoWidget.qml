@@ -19,10 +19,10 @@ PluginComponent {
     // Control Center Integration
     ccWidgetIcon: "pets"
     ccWidgetPrimaryText: I18n.tr("Bongo Cat")
-    ccWidgetSecondaryText: isSleeping ? I18n.tr("Sleeping") : I18n.tr("Active")
-    ccWidgetIsActive: !isSleeping
+    ccWidgetSecondaryText: forceSleep ? I18n.tr("Sleeping") : I18n.tr("Active")
+    ccWidgetIsActive: !forceSleep
     ccDetailHeight: 0 // No detail view needed, simple toggle
-    onCcWidgetToggled: isSleeping = !isSleeping
+    onCcWidgetToggled: forceSleep = !forceSleep
 
     readonly property bool showHints: pluginData.showHints ?? true
 
@@ -32,6 +32,9 @@ PluginComponent {
     property bool isBlinking: false
     property bool isWaiting: true
     property bool forceSleep: false
+    onForceSleepChanged: {
+        if (forceSleep) isWaiting = true;
+    }
 
     property var deviceOptions: ["All Keyboards (Auto)"]
     property var deviceMap: ({ "All Keyboards (Auto)": "all" })
