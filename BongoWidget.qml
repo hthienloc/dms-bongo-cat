@@ -16,15 +16,7 @@ PluginComponent {
     pluginId: "bongoCat"
     pluginService: PluginService
 
-    // Control Center Integration
-    ccWidgetIcon: "pets"
-    ccWidgetPrimaryText: I18n.tr("Bongo Cat")
-    ccWidgetSecondaryText: forceSleep ? I18n.tr("Sleeping") : I18n.tr("Active")
-    ccWidgetIsActive: !forceSleep
-    ccDetailHeight: 0 // No detail view needed, simple toggle
-    onCcWidgetToggled: forceSleep = !forceSleep
-
-    readonly property bool showHints: pluginData.showHints ?? true
+    readonly property bool showHints: pluginData.showHints || true
 
 
     property int catState: 0
@@ -38,7 +30,7 @@ PluginComponent {
 
     property var deviceOptions: ["All Keyboards (Auto)"]
     property var deviceMap: ({ "All Keyboards (Auto)": "all" })
-    readonly property string selectedDevicePath: pluginData?.selectedDevicePath ?? "all"
+    readonly property string selectedDevicePath: (pluginData && pluginData.selectedDevicePath !== undefined ? pluginData.selectedDevicePath : "all")
     onSelectedDevicePathChanged: {
         console.log("[BongoCat] Device selection changed to:", selectedDevicePath);
         inputProc.running = false;
@@ -58,17 +50,17 @@ PluginComponent {
         return "All Keyboards (Auto)";
     }
 
-    readonly property real catSize: (pluginData?.catSizePercent ?? 100) / 100.0
-    readonly property int catYOffset: pluginData?.catYOffset ?? 0
-    readonly property bool enableBlinking: pluginData?.enableBlinking ?? true
-    readonly property int waitingTimeout: (pluginData?.waitingTimeout ?? 5) * 1000
+    readonly property real catSize: ((pluginData && pluginData.catSizePercent !== undefined ? pluginData.catSizePercent : 100)) / 100.0
+    readonly property int catYOffset: (pluginData && pluginData.catYOffset !== undefined ? pluginData.catYOffset : 0)
+    readonly property bool enableBlinking: (pluginData && pluginData.enableBlinking !== undefined ? pluginData.enableBlinking : true)
+    readonly property int waitingTimeout: ((pluginData && pluginData.waitingTimeout !== undefined ? pluginData.waitingTimeout : 5)) * 1000
 
-    readonly property int pawHoldTime: pluginData?.pawHoldTime ?? 0
-    readonly property bool activeColor: pluginData?.activeColor ?? false
+    readonly property int pawHoldTime: (pluginData && pluginData.pawHoldTime !== undefined ? pluginData.pawHoldTime : 0)
+    readonly property bool activeColor: (pluginData && pluginData.activeColor !== undefined ? pluginData.activeColor : false)
 
     function saveSetting(key, value) {
         try {
-            pluginService?.savePluginData(pluginId, key, value);
+            pluginService.savePluginData(pluginId, key, value);
             if (pluginData) pluginData[key] = value;
         } catch(e) {
             console.log("[BongoCat] Failed to save setting:", key, e);

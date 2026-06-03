@@ -14,9 +14,10 @@ PluginSettings {
         SectionTitle { 
             text: I18n.tr("Appearance")
             icon: "palette" 
-            showReset: catSizePercent.isDirty || activeColor.isDirty || enableBlinking.isDirty
+            showReset: catSizePercent.isDirty || catYOffset.isDirty || activeColor.isDirty || enableBlinking.isDirty
             onResetClicked: {
                 catSizePercent.resetToDefault();
+                catYOffset.resetToDefault();
                 activeColor.resetToDefault();
                 enableBlinking.resetToDefault();
             }
@@ -32,6 +33,20 @@ PluginSettings {
             unit: "%"
             leftLabel: "50%"
             rightLabel: "200%"
+        }
+
+        Separator {}
+
+        SliderSettingPlus {
+            id: catYOffset
+            settingKey: "catYOffset"
+            label: I18n.tr("Vertical Offset")
+            defaultValue: 0
+            minimum: -20
+            maximum: 20
+            unit: "px"
+            leftLabel: "-20px"
+            rightLabel: "20px"
         }
 
         Separator {}
