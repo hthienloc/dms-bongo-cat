@@ -16,7 +16,7 @@ PluginComponent {
     pluginId: "bongoCat"
     pluginService: PluginService
 
-    readonly property bool showHints: pluginData.showHints || true
+    readonly property bool showHints: pluginData.showHints ?? true
 
 
     property int catState: 0
