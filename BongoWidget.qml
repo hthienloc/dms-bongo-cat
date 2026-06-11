@@ -28,6 +28,7 @@ PluginComponent {
     readonly property real catSize: ((pluginData && pluginData.catSizePercentBar !== undefined ? pluginData.catSizePercentBar : 100)) / 100.0
     readonly property int catYOffset: (pluginData && pluginData.catYOffsetBar !== undefined ? pluginData.catYOffsetBar : 0)
     readonly property bool activeColor: (pluginData && pluginData.activeColorBar !== undefined ? pluginData.activeColorBar : false)
+    readonly property bool enableBlinking: (pluginData && pluginData.enableBlinking !== undefined ? pluginData.enableBlinking : true)
     readonly property string selectedDevicePath: (pluginData && pluginData.selectedDevicePath !== undefined ? pluginData.selectedDevicePath : "all")
     readonly property int waitingTimeout: ((pluginData && pluginData.waitingTimeout !== undefined ? pluginData.waitingTimeout : 5)) * 1000
     readonly property int pawHoldTime: (pluginData && pluginData.pawHoldTime !== undefined ? pluginData.pawHoldTime : 0)
