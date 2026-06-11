@@ -10,38 +10,30 @@ import qs.Services
 import qs.Modules.Plugins
 import "./dms-common"
 
-
 PluginComponent {
     id: root
     pluginId: "bongoCat"
     pluginService: PluginService
 
+    // Global variables from daemon
+    PluginGlobalVar { id: globalCatState; varName: "catState"; defaultValue: 0 }
+    PluginGlobalVar { id: globalIsWaiting; varName: "isWaiting"; defaultValue: true }
+    PluginGlobalVar { id: globalIsBlinking; varName: "isBlinking"; defaultValue: false }
+    PluginGlobalVar { id: globalForceSleep; varName: "forceSleep"; defaultValue: false }
+    PluginGlobalVar { id: globalDeviceOptions; varName: "deviceOptions"; defaultValue: ["All Keyboards (Auto)"] }
+    PluginGlobalVar { id: globalDeviceMap; varName: "deviceMap"; defaultValue: ({ "All Keyboards (Auto)": "all" }) }
+
     readonly property bool showHints: pluginData.showHints ?? true
 
-
-    property int catState: 0
-    property bool leftWasLast: false
-    property bool isBlinking: false
-    property bool isWaiting: true
-    property bool forceSleep: false
-    onForceSleepChanged: {
-        if (forceSleep) isWaiting = true;
-    }
-
-    property var deviceOptions: ["All Keyboards (Auto)"]
-    property var deviceMap: ({ "All Keyboards (Auto)": "all" })
+    readonly property real catSize: ((pluginData && pluginData.catSizePercent !== undefined ? pluginData.catSizePercent : 100)) / 100.0
+    readonly property int catYOffset: (pluginData && pluginData.catYOffset !== undefined ? pluginData.catYOffset : 0)
+    readonly property bool activeColor: (pluginData && pluginData.activeColor !== undefined ? pluginData.activeColor : false)
     readonly property string selectedDevicePath: (pluginData && pluginData.selectedDevicePath !== undefined ? pluginData.selectedDevicePath : "all")
-    onSelectedDevicePathChanged: {
-        console.log("[BongoCat] Device selection changed to:", selectedDevicePath);
-        inputProc.running = false;
-        inputRestartTimer.restart();
-    }
+    readonly property int waitingTimeout: ((pluginData && pluginData.waitingTimeout !== undefined ? pluginData.waitingTimeout : 5)) * 1000
+    readonly property int pawHoldTime: (pluginData && pluginData.pawHoldTime !== undefined ? pluginData.pawHoldTime : 0)
 
-    Timer {
-        id: inputRestartTimer
-        interval: 200
-        onTriggered: inputProc.running = true
-    }
+    readonly property var deviceOptions: globalDeviceOptions.value
+    readonly property var deviceMap: globalDeviceMap.value
 
     readonly property string selectedDeviceName: {
         for (let name in deviceMap) {
@@ -49,14 +41,6 @@ PluginComponent {
         }
         return "All Keyboards (Auto)";
     }
-
-    readonly property real catSize: ((pluginData && pluginData.catSizePercent !== undefined ? pluginData.catSizePercent : 100)) / 100.0
-    readonly property int catYOffset: (pluginData && pluginData.catYOffset !== undefined ? pluginData.catYOffset : 0)
-    readonly property bool enableBlinking: (pluginData && pluginData.enableBlinking !== undefined ? pluginData.enableBlinking : true)
-    readonly property int waitingTimeout: ((pluginData && pluginData.waitingTimeout !== undefined ? pluginData.waitingTimeout : 5)) * 1000
-
-    readonly property int pawHoldTime: (pluginData && pluginData.pawHoldTime !== undefined ? pluginData.pawHoldTime : 0)
-    readonly property bool activeColor: (pluginData && pluginData.activeColor !== undefined ? pluginData.activeColor : false)
 
     function saveSetting(key, value) {
         try {
@@ -84,206 +68,10 @@ PluginComponent {
     readonly property string blinkGlyph: "gh"
     readonly property string sleepGlyph: "ef"
 
-    function onKeyPress(isBigHit) {
-        isWaiting = false;
-        let targetState;
-        if (isBigHit) {
-            targetState = 3;
-        } else {
-            if (catState !== 0) {
-                targetState = 3;
-            } else {
-                leftWasLast = !leftWasLast;
-                targetState = leftWasLast ? 1 : 2;
-            }
-        }
-        catState = targetState;
-        waitingTimer.restart();
-    }
-
-    function onKeyRelease(isBigHit) {
-        let targetState;
-        if (isBigHit) {
-            targetState = 0;
-        } else {
-            if (catState === 3) {
-                targetState = leftWasLast ? 1 : 2;
-            } else {
-                targetState = 0;
-            }
-        }
-        if (root.pawHoldTime > 0) {
-            pawHoldTimer.interval = root.pawHoldTime;
-            pawHoldTimer.restart();
-        } else {
-            catState = targetState;
-        }
-    }
-
-    function onKeyRepeat(isBigHit) {
-        isWaiting = false;
-        let targetState;
-        if (catState !== 0) {
-            targetState = catState;
-        } else {
-            if (isBigHit) {
-                targetState = 3;
-            } else {
-                targetState = leftWasLast ? 1 : 2;
-            }
-        }
-        catState = targetState;
-        waitingTimer.restart();
-    }
-
-    Timer {
-        id: waitingTimer
-        interval: root.waitingTimeout
-        onTriggered: isWaiting = true
-    }
-
-    Timer {
-        id: pawHoldTimer
-        onTriggered: {
-            if (catState !== 0) {
-                catState = 0;
-            }
-        }
-    }
-
-    Timer {
-        id: blinkIntervalTimer
-        interval: 6000 + Math.random() * 8000
-        repeat: true
-        running: root.enableBlinking && !root.isWaiting
-        onTriggered: {
-            interval = 6000 + Math.random() * 8000;
-            isBlinking = true;
-            blinkDurationTimer.start();
-        }
-    }
-
-    Timer {
-        id: blinkDurationTimer
-        interval: 300
-        onTriggered: isBlinking = false
-    }
-
-    function fetchDevices() {
-        // Devices whose lowercase name matches this regex are always included,
-        // even if they would otherwise be filtered by the exclude list.
-        const includePattern = "kanata";
-
-        const excludePattern = [
-            "power button", "video bus", "speaker", "headphone",
-            "lid switch", "touchpad", "extra buttons", "uinput",
-            "server", "hitune", "inphic", "instant"
-        ].join("|");
-
-        const awkScript = `
-            /^N: Name=/ {
-                name = $0
-                sub(/^N: Name="/, "", name)
-                sub(/"$/, "", name)
-            }
-            /^H: Handlers=/ {
-                lower = tolower(name)
-                include = (lower ~ /${includePattern}/)
-                exclude = (lower ~ /${excludePattern}/)
-                if ($0 ~ /kbd/ && (include || ($0 !~ /mouse/ && !exclude))) {
-                    for (i = 1; i <= NF; i++) {
-                        if ($i ~ /^event[0-9]+$/) {
-                            print name "|/dev/input/" $i
-                            next
-                        }
-                    }
-                }
-            }
-        `;
-        const cmd = `awk '${awkScript}' /proc/bus/input/devices`;
-        
-        Proc.runCommand("bongoCat.fetchDevices", ["bash", "-c", cmd], (stdout, exitCode) => {
-            if (exitCode !== 0) return;
-            const output = stdout.trim();
-            if (!output) return;
-
-            let options = ["All Keyboards (Auto)"];
-            let map = { "All Keyboards (Auto)": "all" };
-            let seenPaths = new Set();
-            seenPaths.add("all");
-
-            output.split("\n").forEach(line => {
-                const parts = line.split("|");
-                if (parts.length === 2) {
-                    const name = parts[0].trim();
-                    const path = parts[1].trim();
-                    if (seenPaths.has(path)) return;
-                    seenPaths.add(path);
-
-                    let uniqueName = name;
-                    let i = 2;
-                    while (options.includes(uniqueName)) {
-                        uniqueName = name + " (" + i + ")";
-                        i++;
-                    }
-                    options.push(uniqueName);
-                    map[uniqueName] = path;
-                }
-            });
-            root.deviceOptions = options;
-            root.deviceMap = map;
-        });
-    }
-
-    Component.onCompleted: fetchDevices()
-
-    // Refresh devices when popout is triggered
+    // Refresh devices when popout is triggered via daemon IPC
     function triggerPopoutWithRefresh() {
-        fetchDevices();
+        Ipc.call("bongoDaemon.refreshDevices");
         root.triggerPopout();
-    }
-
-    Process {
-        id: inputProc
-        command: {
-            const cmd = selectedDevicePath === "all" ? ["libinput", "debug-events"] : ["evtest", selectedDevicePath];
-            console.log("[BongoCat] Starting input process with command:", JSON.stringify(cmd));
-            return cmd;
-        }
-        running: true
-
-        stdout: SplitParser {
-            splitMarker: "\n"
-            onRead: data => {
-                if (data.includes("EV_KEY")) {
-                    const isBigHit = data.includes("KEY_SPACE") || data.includes("KEY_ENTER") || data.includes("KEY_KPENTER");
-                    if (data.includes("value 1")) {
-                        root.onKeyPress(isBigHit);
-                    } else if (data.includes("value 0")) {
-                        root.onKeyRelease(isBigHit);
-                    } else if (data.includes("value 2")) {
-                        root.onKeyRepeat(isBigHit);
-                    }
-                } else if (data.includes("KEYBOARD_KEY")) {
-                    const isBigHit = data.includes("KEY_SPACE") || data.includes("KEY_ENTER") || data.includes("KEY_KPENTER");
-                    if (data.includes("pressed")) {
-                        root.onKeyPress(isBigHit);
-                    } else if (data.includes("released")) {
-                        root.onKeyRelease(isBigHit);
-                    } else if (data.includes("repeat")) {
-                        root.onKeyRepeat(isBigHit);
-                    }
-                }
-            }
-        }
-
-        stderr: StdioCollector {}
-
-        onExited: exitCode => {
-            if (exitCode !== 0) {
-                console.warn("[BongoCat] evtest failed. Error code:", exitCode);
-            }
-        }
     }
 
     horizontalBarPill: Component {
@@ -298,17 +86,17 @@ PluginComponent {
                 acceptedButtons: Qt.LeftButton | Qt.RightButton
                 onClicked: mouse => {
                     if (mouse.button === Qt.RightButton) {
-                        root.forceSleep = !root.forceSleep;
-                        console.log("[BongoCat] Right click - forceSleep:", root.forceSleep);
-                        if (root.forceSleep) root.isWaiting = true;
+                        const nextSleep = !globalForceSleep.value;
+                        root.saveSetting("forceSleep", nextSleep);
+                        console.log("[BongoCat] Right click - forceSleep:", nextSleep);
                     } else {
                         root.triggerPopoutWithRefresh();
                     }
                 }
                 onPressAndHold: mouse => {
                     if (mouse.button === Qt.RightButton) {
-                        root.forceSleep = !root.forceSleep;
-                        if (root.forceSleep) root.isWaiting = true;
+                        const nextSleep = !globalForceSleep.value;
+                        root.saveSetting("forceSleep", nextSleep);
                     }
                 }
             }
@@ -319,9 +107,10 @@ PluginComponent {
                 anchors.verticalCenterOffset: root.catYOffset
                 font.family: bongoFont.name
                 font.pixelSize: 24 * root.catSize
-                color: root.forceSleep ? Theme.surfaceVariantText : ((root.activeColor && !root.isWaiting) ? Theme.primary : Theme.surfaceText)
-                opacity: root.forceSleep ? 0.5 : 1.0
-                text: root.forceSleep ? root.sleepGlyph : (root.isWaiting ? root.sleepGlyph : (root.isBlinking && root.catState === 0 ? root.blinkGlyph : root.glyphMap[root.catState]))
+                font.letterSpacing: - (font.pixelSize / 40.0)
+                color: globalForceSleep.value ? Theme.surfaceVariantText : ((root.activeColor && !globalIsWaiting.value) ? Theme.primary : Theme.surfaceText)
+                opacity: globalForceSleep.value ? 0.5 : 1.0
+                text: globalForceSleep.value ? root.sleepGlyph : (globalIsWaiting.value ? root.sleepGlyph : (globalIsBlinking.value && globalCatState.value === 0 ? root.blinkGlyph : root.glyphMap[globalCatState.value]))
             }
         }
     }
@@ -338,7 +127,7 @@ PluginComponent {
             headerText: "Bongo Cat"
             showCloseButton: true
 
-            readonly property bool isActive: !root.isWaiting && !root.forceSleep
+            readonly property bool isActive: !globalIsWaiting.value && !globalForceSleep.value
 
             Column {
                 width: parent.width
@@ -367,7 +156,7 @@ PluginComponent {
                         font.pixelSize: 80
                         font.letterSpacing: -2
                         color: popout.isActive ? Theme.onPrimaryContainer : Theme.surfaceText
-                        text: root.forceSleep ? root.sleepGlyph : (!popout.isActive ? root.sleepGlyph : (root.isBlinking && root.catState === 0 ? root.blinkGlyph : root.glyphMap[root.catState]))
+                        text: globalForceSleep.value ? root.sleepGlyph : (!popout.isActive ? root.sleepGlyph : (globalIsBlinking.value && globalCatState.value === 0 ? root.blinkGlyph : root.glyphMap[globalCatState.value]))
                     }
                 }
 
