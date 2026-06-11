@@ -25,9 +25,9 @@ PluginComponent {
 
     readonly property bool showHints: pluginData.showHints ?? true
 
-    readonly property real catSize: ((pluginData && pluginData.catSizePercent !== undefined ? pluginData.catSizePercent : 100)) / 100.0
-    readonly property int catYOffset: (pluginData && pluginData.catYOffset !== undefined ? pluginData.catYOffset : 0)
-    readonly property bool activeColor: (pluginData && pluginData.activeColor !== undefined ? pluginData.activeColor : false)
+    readonly property real catSize: ((pluginData && pluginData.catSizePercentBar !== undefined ? pluginData.catSizePercentBar : 100)) / 100.0
+    readonly property int catYOffset: (pluginData && pluginData.catYOffsetBar !== undefined ? pluginData.catYOffsetBar : 0)
+    readonly property bool activeColor: (pluginData && pluginData.activeColorBar !== undefined ? pluginData.activeColorBar : false)
     readonly property string selectedDevicePath: (pluginData && pluginData.selectedDevicePath !== undefined ? pluginData.selectedDevicePath : "all")
     readonly property int waitingTimeout: ((pluginData && pluginData.waitingTimeout !== undefined ? pluginData.waitingTimeout : 5)) * 1000
     readonly property int pawHoldTime: (pluginData && pluginData.pawHoldTime !== undefined ? pluginData.pawHoldTime : 0)
@@ -70,8 +70,12 @@ PluginComponent {
 
     // Refresh devices when popout is triggered via daemon IPC
     function triggerPopoutWithRefresh() {
-        Ipc.call("bongoDaemon.refreshDevices");
+        // Open popout immediately to avoid lag
         root.triggerPopout();
+        // Refresh devices asynchronously
+        Qt.callLater(() => {
+            Ipc.call("bongoDaemon.refreshDevices");
+        });
     }
 
     horizontalBarPill: Component {
@@ -196,7 +200,7 @@ PluginComponent {
                         spacing: 2
 
                         StyledText {
-                            text: "Cat Size"
+                            text: "Cat Size (Bar)"
                             font.pixelSize: Theme.fontSizeExtraSmall
                             font.weight: Font.Medium
                             color: Theme.surfaceVariantText
@@ -213,7 +217,7 @@ PluginComponent {
                                 value: root.catSize * 100
                                 minimum: 50; maximum: 200
                                 centerMinimum: false; unit: "%"; showValue: true
-                                onSliderValueChanged: v => root.saveSetting("catSizePercent", v)
+                                onSliderValueChanged: v => root.saveSetting("catSizePercentBar", v)
                                 anchors.verticalCenter: parent.verticalCenter
                             }
                             DankIcon {
@@ -227,7 +231,7 @@ PluginComponent {
                                     enabled: (root.catSize * 100) !== 100
                                     cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
                                     onClicked: {
-                                        root.saveSetting("catSizePercent", 100);
+                                        root.saveSetting("catSizePercentBar", 100);
                                         sizeSlider.value = 100;
                                     }
                                 }
@@ -286,7 +290,7 @@ PluginComponent {
                         spacing: 2
 
                         StyledText {
-                            text: "Vertical Offset"
+                            text: "Vertical Offset (Bar)"
                             font.pixelSize: Theme.fontSizeExtraSmall
                             font.weight: Font.Medium
                             color: Theme.surfaceVariantText
@@ -303,7 +307,7 @@ PluginComponent {
                                 value: root.catYOffset
                                 minimum: -10; maximum: 10
                                 centerMinimum: false; unit: "px"; showValue: true
-                                onSliderValueChanged: v => root.saveSetting("catYOffset", v)
+                                onSliderValueChanged: v => root.saveSetting("catYOffsetBar", v)
                                 anchors.verticalCenter: parent.verticalCenter
                             }
                             DankIcon {
@@ -317,7 +321,7 @@ PluginComponent {
                                     enabled: root.catYOffset !== 0
                                     cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
                                     onClicked: {
-                                        root.saveSetting("catYOffset", 0);
+                                        root.saveSetting("catYOffsetBar", 0);
                                         offsetSlider.value = 0;
                                     }
                                 }
@@ -409,7 +413,7 @@ PluginComponent {
                                 MouseArea {
                                     anchors.fill: parent
                                     cursorShape: Qt.PointingHandCursor
-                                    onClicked: root.saveSetting("activeColor", !root.activeColor)
+                                    onClicked: root.saveSetting("activeColorBar", !root.activeColor)
                                 }
                             }
                             StyledText {

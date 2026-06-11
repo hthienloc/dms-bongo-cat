@@ -17,9 +17,8 @@ DesktopPluginComponent {
     PluginGlobalVar { id: globalIsBlinking; varName: "isBlinking"; defaultValue: false }
     PluginGlobalVar { id: globalForceSleep; varName: "forceSleep"; defaultValue: false }
 
-    readonly property real catSize: ((pluginData && pluginData.catSizePercent !== undefined ? pluginData.catSizePercent : 100)) / 100.0
-    readonly property int catYOffset: (pluginData && pluginData.catYOffset !== undefined ? pluginData.catYOffset : 0)
-    readonly property bool activeColor: (pluginData && pluginData.activeColor !== undefined ? pluginData.activeColor : false)
+    readonly property real catSize: ((pluginData && pluginData.catSizePercentDesktop !== undefined ? pluginData.catSizePercentDesktop : 100)) / 100.0
+    readonly property bool activeColor: (pluginData && pluginData.activeColorDesktop !== undefined ? pluginData.activeColorDesktop : false)
 
     FontLoader {
         id: bongoFont
@@ -33,7 +32,6 @@ DesktopPluginComponent {
     Text {
         id: catLabel
         anchors.centerIn: parent
-        anchors.verticalCenterOffset: root.catYOffset * (Math.min(parent.width, parent.height) / 80.0)
         font.family: bongoFont.name
         font.pixelSize: Math.min(parent.width, parent.height) * root.catSize * 0.8
         font.letterSpacing: - (font.pixelSize / 40.0)

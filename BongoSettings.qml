@@ -10,22 +10,21 @@ PluginSettings {
     pluginId: "bongoCat"
 
     SettingsCard {
-        id: appearanceSection
+        id: appearanceBarSection
         SectionTitle { 
-            text: I18n.tr("Appearance")
+            text: I18n.tr("Appearance (Bar)")
             icon: "palette" 
-            showReset: catSizePercent.isDirty || catYOffset.isDirty || activeColor.isDirty || enableBlinking.isDirty
+            showReset: catSizePercentBar.isDirty || catYOffsetBar.isDirty || activeColorBar.isDirty
             onResetClicked: {
-                catSizePercent.resetToDefault();
-                catYOffset.resetToDefault();
-                activeColor.resetToDefault();
-                enableBlinking.resetToDefault();
+                catSizePercentBar.resetToDefault();
+                catYOffsetBar.resetToDefault();
+                activeColorBar.resetToDefault();
             }
         }
 
         SliderSettingPlus {
-            id: catSizePercent
-            settingKey: "catSizePercent"
+            id: catSizePercentBar
+            settingKey: "catSizePercentBar"
             label: I18n.tr("Cat Size")
             defaultValue: 100
             minimum: 50
@@ -38,8 +37,8 @@ PluginSettings {
         Separator {}
 
         SliderSettingPlus {
-            id: catYOffset
-            settingKey: "catYOffset"
+            id: catYOffsetBar
+            settingKey: "catYOffsetBar"
             label: I18n.tr("Vertical Offset")
             defaultValue: 0
             minimum: -20
@@ -52,14 +51,59 @@ PluginSettings {
         Separator {}
 
         ToggleSettingPlus {
-            id: activeColor
-            settingKey: "activeColor"
+            id: activeColorBar
+            settingKey: "activeColorBar"
             label: I18n.tr("Use Primary Color")
             description: I18n.tr("Apply the system primary color to the cat instead of classic black and white.")
             defaultValue: false
         }
+    }
+
+    SettingsCard {
+        id: appearanceDesktopSection
+        SectionTitle { 
+            text: I18n.tr("Appearance (Desktop)")
+            icon: "desktop_windows" 
+            showReset: catSizePercentDesktop.isDirty || activeColorDesktop.isDirty
+            onResetClicked: {
+                catSizePercentDesktop.resetToDefault();
+                activeColorDesktop.resetToDefault();
+            }
+        }
+
+        SliderSettingPlus {
+            id: catSizePercentDesktop
+            settingKey: "catSizePercentDesktop"
+            label: I18n.tr("Cat Size")
+            defaultValue: 100
+            minimum: 50
+            maximum: 200
+            unit: "%"
+            leftLabel: "50%"
+            rightLabel: "200%"
+        }
 
         Separator {}
+
+        ToggleSettingPlus {
+            id: activeColorDesktop
+            settingKey: "activeColorDesktop"
+            label: I18n.tr("Use Primary Color")
+            description: I18n.tr("Apply the system primary color to the cat instead of classic black and white.")
+            defaultValue: false
+        }
+    }
+
+    SettingsCard {
+        id: generalSection
+        SectionTitle { 
+            text: I18n.tr("General Visuals")
+            icon: "visibility" 
+            showReset: enableBlinking.isDirty
+            onResetClicked: {
+                enableBlinking.resetToDefault();
+            }
+        }
 
         ToggleSettingPlus {
             id: enableBlinking

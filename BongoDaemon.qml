@@ -30,15 +30,24 @@ PluginComponent {
     onForceSleepChanged: {
         globalForceSleep.set(forceSleep);
         if (forceSleep) {
-            globalIsWaiting.set(true);
+            isWaiting = true;
+        } else {
+            // Wake up immediately when disabling force sleep
+            isWaiting = false;
+            waitingTimer.restart();
         }
     }
 
     // React to changes from widgets on forceSleep
     Connections {
-        target: pluginData ? pluginData : null
-        function onForceSleepChanged() {
-            root.forceSleep = pluginData.forceSleep;
+        target: PluginService
+        function onPluginDataChanged(pid) {
+            if (pid === root.pluginId) {
+                const nextForceSleep = PluginService.loadPluginData(root.pluginId, "forceSleep", false);
+                if (root.forceSleep !== nextForceSleep) {
+                    root.forceSleep = nextForceSleep;
+                }
+            }
         }
     }
 
