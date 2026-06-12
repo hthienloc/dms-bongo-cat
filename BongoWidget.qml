@@ -35,6 +35,7 @@ PluginComponent {
         console.log("[BongoCat] Device selection changed to:", selectedDevicePath);
         inputProc.running = false;
         inputRestartTimer.restart();
+        resetMetrics();
     }
 
     Timer {
@@ -128,6 +129,9 @@ PluginComponent {
     }
 
     onShowMetricsChanged: resetMetrics()
+    // Widening the window would otherwise show a misleadingly low reading until
+    // the (already-pruned) buffer refills; reset so it starts fresh.
+    onMetricsWindowSecChanged: resetMetrics()
 
     Timer {
         id: metricsTicker
