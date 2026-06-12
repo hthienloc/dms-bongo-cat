@@ -58,6 +58,83 @@ PluginComponent {
     readonly property int pawHoldTime: (pluginData && pluginData.pawHoldTime !== undefined ? pluginData.pawHoldTime : 0)
     readonly property bool activeColor: (pluginData && pluginData.activeColor !== undefined ? pluginData.activeColor : false)
 
+    // --- Typing metrics (roadmap item) ---
+    // Optional WPM + correction-rate overlay. Only keystroke *timing* is counted;
+    // no key contents are ever stored or logged. Numbers are computed over a
+    // sliding 60s window so they reflect recent typing, not the whole session.
+    readonly property bool showMetrics: (pluginData && pluginData.showMetrics !== undefined ? pluginData.showMetrics : false)
+    readonly property int metricsWindowMs: 60000
+
+    property int liveWpm: 0
+    property int cleanPercent: 100
+    // Plain timestamp buffers (ms). Read/written only in code, never in bindings.
+    property var _charStamps: []
+    property var _correctionStamps: []
+
+    // Keys that produce no character and must not inflate WPM.
+    readonly property var _nonCharKeys: ({
+        "KEY_LEFTSHIFT": 1, "KEY_RIGHTSHIFT": 1, "KEY_LEFTCTRL": 1, "KEY_RIGHTCTRL": 1,
+        "KEY_LEFTALT": 1, "KEY_RIGHTALT": 1, "KEY_LEFTMETA": 1, "KEY_RIGHTMETA": 1,
+        "KEY_CAPSLOCK": 1, "KEY_NUMLOCK": 1, "KEY_SCROLLLOCK": 1,
+        "KEY_ESC": 1, "KEY_ENTER": 1, "KEY_KPENTER": 1, "KEY_TAB": 1,
+        "KEY_LEFT": 1, "KEY_RIGHT": 1, "KEY_UP": 1, "KEY_DOWN": 1,
+        "KEY_HOME": 1, "KEY_END": 1, "KEY_PAGEUP": 1, "KEY_PAGEDOWN": 1, "KEY_INSERT": 1,
+        "KEY_COMPOSE": 1, "KEY_MENU": 1, "KEY_SYSRQ": 1, "KEY_PAUSE": 1
+    })
+
+    // Returns "char" | "correction" | "ignore".
+    function classifyKey(name) {
+        if (name === "KEY_BACKSPACE" || name === "KEY_DELETE")
+            return "correction";
+        if (_nonCharKeys[name] || /^KEY_F\d+$/.test(name))
+            return "ignore";
+        return "char";
+    }
+
+    // Called on every key press. keyName is "" when libinput masks it (no
+    // --show-keycodes); we then treat it as a generic character stroke.
+    function recordKeystroke(keyName) {
+        if (!showMetrics)
+            return;
+        const kind = keyName ? classifyKey(keyName) : "char";
+        if (kind === "ignore")
+            return;
+        if (kind === "correction")
+            _correctionStamps.push(Date.now());
+        else
+            _charStamps.push(Date.now());
+    }
+
+    function _pruneAndCompute() {
+        const cutoff = Date.now() - metricsWindowMs;
+        _charStamps = _charStamps.filter(t => t >= cutoff);
+        _correctionStamps = _correctionStamps.filter(t => t >= cutoff);
+        const chars = _charStamps.length;
+        const corrections = _correctionStamps.length;
+        // Window is 60s, so chars / 5 already equals words-per-minute.
+        liveWpm = Math.round(chars / 5);
+        cleanPercent = (chars + corrections) > 0
+            ? Math.round(100 * chars / (chars + corrections))
+            : 100;
+    }
+
+    function resetMetrics() {
+        _charStamps = [];
+        _correctionStamps = [];
+        liveWpm = 0;
+        cleanPercent = 100;
+    }
+
+    onShowMetricsChanged: resetMetrics()
+
+    Timer {
+        id: metricsTicker
+        interval: 1000
+        repeat: true
+        running: root.showMetrics
+        onTriggered: root._pruneAndCompute()
+    }
+
     function saveSetting(key, value) {
         try {
             pluginService.savePluginData(pluginId, key, value);
@@ -246,7 +323,12 @@ PluginComponent {
     Process {
         id: inputProc
         command: {
-            const cmd = selectedDevicePath === "all" ? ["libinput", "debug-events"] : ["evtest", selectedDevicePath];
+            // --show-keycodes makes libinput emit real key names (otherwise masked
+            // as "***"), which lets us classify keystrokes for metrics and detect
+            // big-hit keys in Auto mode.
+            const cmd = selectedDevicePath === "all"
+                ? ["libinput", "debug-events", "--show-keycodes"]
+                : ["evtest", selectedDevicePath];
             console.log("[BongoCat] Starting input process with command:", JSON.stringify(cmd));
             return cmd;
         }
@@ -256,8 +338,11 @@ PluginComponent {
             splitMarker: "\n"
             onRead: data => {
                 if (data.includes("EV_KEY")) {
-                    const isBigHit = data.includes("KEY_SPACE") || data.includes("KEY_ENTER") || data.includes("KEY_KPENTER");
+                    const keyMatch = data.match(/(KEY_[A-Z0-9_]+)/);
+                    const keyName = keyMatch ? keyMatch[1] : "";
+                    const isBigHit = keyName === "KEY_SPACE" || keyName === "KEY_ENTER" || keyName === "KEY_KPENTER";
                     if (data.includes("value 1")) {
+                        root.recordKeystroke(keyName);
                         root.onKeyPress(isBigHit);
                     } else if (data.includes("value 0")) {
                         root.onKeyRelease(isBigHit);
@@ -265,8 +350,11 @@ PluginComponent {
                         root.onKeyRepeat(isBigHit);
                     }
                 } else if (data.includes("KEYBOARD_KEY")) {
-                    const isBigHit = data.includes("KEY_SPACE") || data.includes("KEY_ENTER") || data.includes("KEY_KPENTER");
+                    const keyMatch = data.match(/(KEY_[A-Z0-9_]+)/);
+                    const keyName = keyMatch ? keyMatch[1] : "";
+                    const isBigHit = keyName === "KEY_SPACE" || keyName === "KEY_ENTER" || keyName === "KEY_KPENTER";
                     if (data.includes("pressed")) {
+                        root.recordKeystroke(keyName);
                         root.onKeyPress(isBigHit);
                     } else if (data.includes("released")) {
                         root.onKeyRelease(isBigHit);
