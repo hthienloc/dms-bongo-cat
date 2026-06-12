@@ -67,6 +67,16 @@ PluginSettings {
             label: I18n.tr("Enable Blinking")
             defaultValue: true
         }
+
+        Separator {}
+
+        ToggleSettingPlus {
+            id: mouseEnabled
+            settingKey: "mouseEnabled"
+            label: I18n.tr("Mouse Interaction")
+            description: I18n.tr("Left click holds the left paw, right click the right paw, scrolling drums with alternating paws.")
+            defaultValue: true
+        }
     }
 
     SettingsCard {
