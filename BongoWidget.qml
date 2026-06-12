@@ -31,6 +31,33 @@ PluginComponent {
     property var deviceOptions: ["All Keyboards (Auto)"]
     property var deviceMap: ({ "All Keyboards (Auto)": "all" })
     readonly property string selectedDevicePath: (pluginData && pluginData.selectedDevicePath !== undefined ? pluginData.selectedDevicePath : "all")
+
+    // Surface silent input-monitor failures (missing CLI tool / missing
+    // input group) instead of leaving the cat motionless without a hint.
+    property bool inputToolMissing: false
+    property bool notInInputGroup: false
+    readonly property bool inputBroken: inputToolMissing || notInInputGroup
+    readonly property string requiredTool: selectedDevicePath === "all" ? "libinput" : "evtest"
+
+    onRequiredToolChanged: toolCheck.running = true
+
+    Process {
+        id: toolCheck
+        command: ["sh", "-c", "command -v " + root.requiredTool + " >/dev/null 2>&1"]
+        running: true
+        onExited: (exitCode, exitStatus) => {
+            root.inputToolMissing = (exitCode !== 0);
+        }
+    }
+
+    Process {
+        id: groupCheck
+        command: ["sh", "-c", "id -nG | tr ' ' '\n' | grep -qx input"]
+        running: true
+        onExited: (exitCode, exitStatus) => {
+            root.notInInputGroup = (exitCode !== 0);
+        }
+    }
     onSelectedDevicePathChanged: {
         console.log("[BongoCat] Device selection changed to:", selectedDevicePath);
         inputProc.running = false;
@@ -323,6 +350,15 @@ PluginComponent {
                 opacity: root.forceSleep ? 0.5 : 1.0
                 text: root.forceSleep ? root.sleepGlyph : (root.isWaiting ? root.sleepGlyph : (root.isBlinking && root.catState === 0 ? root.blinkGlyph : root.glyphMap[root.catState]))
             }
+
+            DankIcon {
+                visible: root.inputBroken
+                name: "warning"
+                size: 11
+                color: Theme.error
+                anchors.top: parent.top
+                anchors.right: parent.right
+            }
         }
     }
 
@@ -343,7 +379,44 @@ PluginComponent {
             Column {
                 width: parent.width
                 spacing: Theme.spacingL
-                
+
+                Rectangle {
+                    width: parent.width
+                    visible: root.inputBroken
+                    radius: Theme.cornerRadius
+                    color: Theme.errorHover
+                    implicitHeight: warnCol.implicitHeight + Theme.spacingM * 2
+
+                    Column {
+                        id: warnCol
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.margins: Theme.spacingM
+                        spacing: Theme.spacingXS
+
+                        StyledText {
+                            width: parent.width
+                            visible: root.inputToolMissing
+                            text: root.selectedDevicePath === "all"
+                                ? "The 'libinput' CLI was not found, so Auto mode can't see your keyboard. Install it (Arch: libinput-tools, Debian/Ubuntu: libinput-tools, Fedora: libinput-utils) or pick a specific keyboard below."
+                                : "'evtest' was not found — install it to monitor a specific keyboard, or switch to Auto mode."
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: Theme.error
+                            wrapMode: Text.Wrap
+                        }
+
+                        StyledText {
+                            width: parent.width
+                            visible: root.notInInputGroup
+                            text: "Your user is not in the 'input' group, so keyboard events can't be read. Run: sudo usermod -aG input $USER — then log out and back in."
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: Theme.error
+                            wrapMode: Text.Wrap
+                        }
+                    }
+                }
+
                 StyledRect {
                     width: parent.width
                     height: 140
