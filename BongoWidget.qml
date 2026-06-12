@@ -459,6 +459,63 @@ PluginComponent {
                     }
                 }
 
+                // Typing metrics overlay (optional)
+                Row {
+                    width: parent.width
+                    visible: root.showMetrics
+                    spacing: Theme.spacingM
+
+                    StyledRect {
+                        width: (parent.width - Theme.spacingM) / 2
+                        height: 64
+                        radius: Theme.cornerRadius
+                        color: Theme.surfaceContainerHigh
+
+                        Column {
+                            anchors.centerIn: parent
+                            spacing: 0
+                            StyledText {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: root.liveWpm
+                                font.pixelSize: Theme.fontSizeLarge
+                                font.weight: Font.Bold
+                                color: Theme.primary
+                            }
+                            StyledText {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: "WPM"
+                                font.pixelSize: Theme.fontSizeExtraSmall
+                                color: Theme.surfaceVariantText
+                            }
+                        }
+                    }
+
+                    StyledRect {
+                        width: (parent.width - Theme.spacingM) / 2
+                        height: 64
+                        radius: Theme.cornerRadius
+                        color: Theme.surfaceContainerHigh
+
+                        Column {
+                            anchors.centerIn: parent
+                            spacing: 0
+                            StyledText {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: root.cleanPercent + "%"
+                                font.pixelSize: Theme.fontSizeLarge
+                                font.weight: Font.Bold
+                                color: Theme.primary
+                            }
+                            StyledText {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: "Clean"
+                                font.pixelSize: Theme.fontSizeExtraSmall
+                                color: Theme.surfaceVariantText
+                            }
+                        }
+                    }
+                }
+
                 Column {
                     width: parent.width
                     spacing: Theme.spacingS
@@ -670,11 +727,10 @@ PluginComponent {
                     }
 
                     // Quick Toggles
-                    Row {
+                    Flow {
                         width: parent.width
-                        height: 40
                         spacing: Theme.spacingL
-                        
+
                         // Blink Toggle
                         Row {
                             spacing: Theme.spacingS
@@ -713,6 +769,28 @@ PluginComponent {
                             }
                             StyledText {
                                 text: "Active Color"
+                                font.pixelSize: Theme.fontSizeSmall
+                                color: Theme.surfaceText
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                        }
+
+                        // Metrics Toggle
+                        Row {
+                            spacing: Theme.spacingS
+                            DankIcon {
+                                name: "speed"
+                                size: 22
+                                color: root.showMetrics ? Theme.primary : Theme.surfaceText
+                                opacity: root.showMetrics ? 1.0 : 0.4
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.saveSetting("showMetrics", !root.showMetrics)
+                                }
+                            }
+                            StyledText {
+                                text: "Metrics"
                                 font.pixelSize: Theme.fontSizeSmall
                                 color: Theme.surfaceText
                                 anchors.verticalCenter: parent.verticalCenter

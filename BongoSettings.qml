@@ -74,10 +74,11 @@ PluginSettings {
         SectionTitle { 
             text: I18n.tr("Input & Behavior")
             icon: "keyboard" 
-            showReset: waitingTimeout.isDirty || pawHoldTime.isDirty
+            showReset: waitingTimeout.isDirty || pawHoldTime.isDirty || showMetrics.isDirty
             onResetClicked: {
                 waitingTimeout.resetToDefault();
                 pawHoldTime.resetToDefault();
+                showMetrics.resetToDefault();
             }
         }
 
@@ -107,6 +108,16 @@ PluginSettings {
             defaultValue: 0
             leftLabel: "0ms"
             rightLabel: "100ms"
+        }
+
+        Separator {}
+
+        ToggleSettingPlus {
+            id: showMetrics
+            settingKey: "showMetrics"
+            label: I18n.tr("Show Typing Metrics")
+            description: I18n.tr("Display live typing speed (WPM) and correction rate in the popout. Only keystroke timing is counted; no key contents are stored.")
+            defaultValue: false
         }
     }
 
