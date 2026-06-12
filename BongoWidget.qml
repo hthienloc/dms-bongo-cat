@@ -39,7 +39,10 @@ PluginComponent {
     readonly property bool inputBroken: inputToolMissing || notInInputGroup
     readonly property string requiredTool: selectedDevicePath === "all" ? "libinput" : "evtest"
 
-    onRequiredToolChanged: toolCheck.running = true
+    onRequiredToolChanged: {
+        toolCheck.running = false;
+        toolCheck.running = true;
+    }
 
     Process {
         id: toolCheck
@@ -399,8 +402,8 @@ PluginComponent {
                             width: parent.width
                             visible: root.inputToolMissing
                             text: root.selectedDevicePath === "all"
-                                ? "The 'libinput' CLI was not found, so Auto mode can't see your keyboard. Install it (Arch: libinput-tools, Debian/Ubuntu: libinput-tools, Fedora: libinput-utils) or pick a specific keyboard below."
-                                : "'evtest' was not found — install it to monitor a specific keyboard, or switch to Auto mode."
+                                ? I18n.tr("The 'libinput' CLI was not found, so Auto mode can't see your keyboard. Install it (Arch: libinput-tools, Debian/Ubuntu: libinput-tools, Fedora: libinput-utils) or pick a specific keyboard below.")
+                                : I18n.tr("'evtest' was not found — install it to monitor a specific keyboard, or switch to Auto mode.")
                             font.pixelSize: Theme.fontSizeSmall
                             color: Theme.error
                             wrapMode: Text.Wrap
@@ -409,7 +412,7 @@ PluginComponent {
                         StyledText {
                             width: parent.width
                             visible: root.notInInputGroup
-                            text: "Your user is not in the 'input' group, so keyboard events can't be read. Run: sudo usermod -aG input $USER — then log out and back in."
+                            text: I18n.tr("Your user is not in the 'input' group, so keyboard events can't be read. Run: sudo usermod -aG input $USER — then log out and back in.")
                             font.pixelSize: Theme.fontSizeSmall
                             color: Theme.error
                             wrapMode: Text.Wrap
