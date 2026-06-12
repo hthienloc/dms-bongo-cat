@@ -42,6 +42,7 @@ PluginComponent {
     onRequiredToolChanged: {
         toolCheck.running = false;
         toolCheck.running = true;
+        clearMouseState();
         refreshMouseToolCheck();
     }
 
@@ -59,7 +60,10 @@ PluginComponent {
     readonly property bool mouseBroken: mouseEnabled && selectedDevicePath !== "all" && mouseToolMissing
     property bool mouseToolMissing: false
 
-    onMouseEnabledChanged: refreshMouseToolCheck()
+    onMouseEnabledChanged: {
+        clearMouseState();
+        refreshMouseToolCheck();
+    }
 
     function refreshMouseToolCheck() {
         if (mouseEnabled && selectedDevicePath !== "all") {
@@ -124,27 +128,54 @@ PluginComponent {
     readonly property real catSize: ((pluginData && pluginData.catSizePercent !== undefined ? pluginData.catSizePercent : 100)) / 100.0
     readonly property int catYOffset: (pluginData && pluginData.catYOffset !== undefined ? pluginData.catYOffset : 0)
     readonly property bool enableBlinking: (pluginData && pluginData.enableBlinking !== undefined ? pluginData.enableBlinking : true)
-    readonly property bool mouseEnabled: (pluginData && pluginData.mouseEnabled !== undefined ? pluginData.mouseEnabled : true)
+    readonly property bool mouseEnabled: (pluginData && pluginData.mouseEnabled !== undefined ? pluginData.mouseEnabled : false)
 
     // --- Mouse interaction (roadmap item) ---
-    // Left button holds the left paw down, right button the right paw,
-    // any other button slams both. Scrolling drums with alternating paws.
+    // Keyboard, mouse buttons and scrolling each track their own paw state;
+    // resolveCatState() merges them so no input source can clobber another
+    // (e.g. releasing a key while a mouse button is still held).
+    property int kbState: 0
+    property int mouseState: 0
+    property int scrollState: 0
+    property bool scrollLeftWasLast: false
     property bool mouseLeftDown: false
     property bool mouseRightDown: false
     property bool mouseOtherDown: false
 
+    function resolveCatState() {
+        const states = [kbState, mouseState, scrollState].filter(s => s !== 0);
+        if (states.length === 0) {
+            catState = 0;
+        } else if (states.indexOf(3) !== -1 || (states.indexOf(1) !== -1 && states.indexOf(2) !== -1)) {
+            catState = 3;
+        } else {
+            catState = states[0];
+        }
+    }
+
     function updateMousePaws() {
         isWaiting = false;
         if ((mouseLeftDown && mouseRightDown) || mouseOtherDown) {
-            catState = 3;
+            mouseState = 3;
         } else if (mouseLeftDown) {
-            catState = 1;
+            mouseState = 1;
         } else if (mouseRightDown) {
-            catState = 2;
+            mouseState = 2;
         } else {
-            catState = 0;
+            mouseState = 0;
         }
+        resolveCatState();
         waitingTimer.restart();
+    }
+
+    function clearMouseState() {
+        mouseLeftDown = false;
+        mouseRightDown = false;
+        mouseOtherDown = false;
+        mouseState = 0;
+        scrollState = 0;
+        scrollReleaseTimer.stop();
+        resolveCatState();
     }
 
     function onMouseButton(buttonName, pressed) {
@@ -160,10 +191,21 @@ PluginComponent {
 
     function onScrollTick() {
         isWaiting = false;
-        leftWasLast = !leftWasLast;
-        catState = leftWasLast ? 1 : 2;
         scrollReleaseTimer.restart();
         waitingTimer.restart();
+        // Rate-limit the drumming so fast touchpad scrolling doesn't strobe
+        if (scrollThrottle.running)
+            return;
+        scrollThrottle.restart();
+        scrollLeftWasLast = !scrollLeftWasLast;
+        scrollState = scrollLeftWasLast ? 1 : 2;
+        resolveCatState();
+    }
+
+    Timer {
+        id: scrollThrottle
+        interval: 75
+        repeat: false
     }
 
     Timer {
@@ -171,8 +213,8 @@ PluginComponent {
         interval: 150
         repeat: false
         onTriggered: {
-            if (!root.mouseLeftDown && !root.mouseRightDown && !root.mouseOtherDown)
-                root.catState = 0;
+            root.scrollState = 0;
+            root.resolveCatState();
         }
     }
 
@@ -186,6 +228,11 @@ PluginComponent {
                 root.onMouseButton(name, false);
             }
         } else if (data.includes("POINTER_SCROLL")) {
+            // Ignore scroll-stop events (zero on both axes)
+            const vert = data.match(/vert\s+(-?\d+(?:\.\d+)?)/);
+            const horiz = data.match(/horiz\s+(-?\d+(?:\.\d+)?)/);
+            if (vert && horiz && parseFloat(vert[1]) === 0 && parseFloat(horiz[1]) === 0)
+                return;
             root.onScrollTick();
         }
     }
@@ -226,14 +273,15 @@ PluginComponent {
         if (isBigHit) {
             targetState = 3;
         } else {
-            if (catState !== 0) {
+            if (kbState !== 0) {
                 targetState = 3;
             } else {
                 leftWasLast = !leftWasLast;
                 targetState = leftWasLast ? 1 : 2;
             }
         }
-        catState = targetState;
+        kbState = targetState;
+        resolveCatState();
         waitingTimer.restart();
     }
 
@@ -242,7 +290,7 @@ PluginComponent {
         if (isBigHit) {
             targetState = 0;
         } else {
-            if (catState === 3) {
+            if (kbState === 3) {
                 targetState = leftWasLast ? 1 : 2;
             } else {
                 targetState = 0;
@@ -252,15 +300,16 @@ PluginComponent {
             pawHoldTimer.interval = root.pawHoldTime;
             pawHoldTimer.restart();
         } else {
-            catState = targetState;
+            kbState = targetState;
+            resolveCatState();
         }
     }
 
     function onKeyRepeat(isBigHit) {
         isWaiting = false;
         let targetState;
-        if (catState !== 0) {
-            targetState = catState;
+        if (kbState !== 0) {
+            targetState = kbState;
         } else {
             if (isBigHit) {
                 targetState = 3;
@@ -268,21 +317,30 @@ PluginComponent {
                 targetState = leftWasLast ? 1 : 2;
             }
         }
-        catState = targetState;
+        kbState = targetState;
+        resolveCatState();
         waitingTimer.restart();
     }
 
     Timer {
         id: waitingTimer
         interval: root.waitingTimeout
-        onTriggered: isWaiting = true
+        onTriggered: {
+            // Don't fall asleep while a mouse button is physically held
+            if (root.mouseLeftDown || root.mouseRightDown || root.mouseOtherDown) {
+                restart();
+                return;
+            }
+            isWaiting = true;
+        }
     }
 
     Timer {
         id: pawHoldTimer
         onTriggered: {
-            if (catState !== 0) {
-                catState = 0;
+            if (kbState !== 0) {
+                kbState = 0;
+                resolveCatState();
             }
         }
     }
@@ -463,7 +521,7 @@ PluginComponent {
             }
 
             DankIcon {
-                visible: root.inputBroken || root.mouseBroken
+                visible: root.inputBroken
                 name: "warning"
                 size: 11
                 color: Theme.error
@@ -529,7 +587,7 @@ PluginComponent {
                         StyledText {
                             width: parent.width
                             visible: root.mouseBroken
-                            text: I18n.tr("Mouse interaction needs the 'libinput' CLI (Arch/Debian: libinput-tools, Fedora: libinput-utils) — or switch the keyboard to Auto mode.")
+                            text: I18n.tr("Mouse interaction needs the 'libinput' CLI — install it (Arch: libinput-tools, Debian/Ubuntu: libinput-tools, Fedora: libinput-utils) or switch the keyboard to Auto mode.")
                             font.pixelSize: Theme.fontSizeSmall
                             color: Theme.error
                             wrapMode: Text.Wrap
