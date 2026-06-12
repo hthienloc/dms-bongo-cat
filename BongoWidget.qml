@@ -63,6 +63,7 @@ PluginComponent {
     // no key contents are ever stored or logged. Numbers are computed over a
     // sliding 60s window so they reflect recent typing, not the whole session.
     readonly property bool showMetrics: (pluginData && pluginData.showMetrics !== undefined ? pluginData.showMetrics : false)
+    readonly property bool metricsInBar: (pluginData && pluginData.metricsInBar !== undefined ? pluginData.metricsInBar : false)
     readonly property int metricsWindowSec: (pluginData && pluginData.metricsWindowSec !== undefined ? pluginData.metricsWindowSec : 60)
     readonly property int metricsWindowMs: metricsWindowSec * 1000
 
@@ -377,8 +378,8 @@ PluginComponent {
 
     horizontalBarPill: Component {
         Item {
-            implicitWidth: catLabel.implicitWidth + Theme.spacingS
-            implicitHeight: Theme.iconSize
+            implicitWidth: pillContent.implicitWidth + Theme.spacingS
+            implicitHeight: Math.max(Theme.iconSize, pillContent.implicitHeight)
 
             MouseArea {
                 id: clickArea
@@ -402,15 +403,35 @@ PluginComponent {
                 }
             }
 
-            Text {
-                id: catLabel
+            // Cat glyph plus an optional metrics readout. Grid switches between
+            // side-by-side (horizontal bar) and stacked (vertical bar) so the
+            // pill stays compact in either orientation.
+            Grid {
+                id: pillContent
                 anchors.centerIn: parent
-                anchors.verticalCenterOffset: root.catYOffset
-                font.family: bongoFont.name
-                font.pixelSize: 24 * root.catSize
-                color: root.forceSleep ? Theme.surfaceVariantText : ((root.activeColor && !root.isWaiting) ? Theme.primary : Theme.surfaceText)
-                opacity: root.forceSleep ? 0.5 : 1.0
-                text: root.forceSleep ? root.sleepGlyph : (root.isWaiting ? root.sleepGlyph : (root.isBlinking && root.catState === 0 ? root.blinkGlyph : root.glyphMap[root.catState]))
+                columns: root.isVertical ? 1 : 2
+                columnSpacing: Theme.spacingXS
+                rowSpacing: 0
+                horizontalItemAlignment: Grid.AlignHCenter
+                verticalItemAlignment: Grid.AlignVCenter
+
+                Text {
+                    id: catLabel
+                    font.family: bongoFont.name
+                    font.pixelSize: 24 * root.catSize
+                    color: root.forceSleep ? Theme.surfaceVariantText : ((root.activeColor && !root.isWaiting) ? Theme.primary : Theme.surfaceText)
+                    opacity: root.forceSleep ? 0.5 : 1.0
+                    text: root.forceSleep ? root.sleepGlyph : (root.isWaiting ? root.sleepGlyph : (root.isBlinking && root.catState === 0 ? root.blinkGlyph : root.glyphMap[root.catState]))
+                    transform: Translate { y: root.catYOffset }
+                }
+
+                StyledText {
+                    visible: root.showMetrics && root.metricsInBar
+                    text: root.liveWpm + " · " + root.cleanPercent + "%"
+                    font.pixelSize: Theme.fontSizeSmall
+                    color: root.forceSleep ? Theme.surfaceVariantText : Theme.surfaceText
+                    opacity: root.forceSleep ? 0.5 : 1.0
+                }
             }
         }
     }
