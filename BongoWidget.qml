@@ -63,7 +63,8 @@ PluginComponent {
     // no key contents are ever stored or logged. Numbers are computed over a
     // sliding 60s window so they reflect recent typing, not the whole session.
     readonly property bool showMetrics: (pluginData && pluginData.showMetrics !== undefined ? pluginData.showMetrics : false)
-    readonly property int metricsWindowMs: 60000
+    readonly property int metricsWindowSec: (pluginData && pluginData.metricsWindowSec !== undefined ? pluginData.metricsWindowSec : 60)
+    readonly property int metricsWindowMs: metricsWindowSec * 1000
 
     property int liveWpm: 0
     property int cleanPercent: 100
@@ -111,8 +112,8 @@ PluginComponent {
         _correctionStamps = _correctionStamps.filter(t => t >= cutoff);
         const chars = _charStamps.length;
         const corrections = _correctionStamps.length;
-        // Window is 60s, so chars / 5 already equals words-per-minute.
-        liveWpm = Math.round(chars / 5);
+        // 5 chars = 1 word; scale the window count up to a per-minute rate.
+        liveWpm = Math.round(chars / 5 * 60000 / metricsWindowMs);
         cleanPercent = (chars + corrections) > 0
             ? Math.round(100 * chars / (chars + corrections))
             : 100;
