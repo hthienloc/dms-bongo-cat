@@ -37,8 +37,10 @@ You can select a specific keyboard from the dropdown menu in the settings. This 
 ## Requirements
 
 - `evtest` - Primary tool for monitoring specific keyboard events.
-- `libinput` - Required only for **"All Keyboards (Auto)"** mode.
-- User must be in `input` group: `sudo usermod -aG input $USER`
+- `libinput` **CLI** - Required only for **"All Keyboards (Auto)"** mode. Note: on many distros the CLI ships separately from the libinput library — Arch/CachyOS & Debian/Ubuntu: `libinput-tools`, Fedora: `libinput-utils`.
+- User must be in `input` group: `sudo usermod -aG input $USER` (log out and back in afterwards)
+
+If the input monitor can't run (missing tool or missing group membership), the cat shows a warning badge and the settings popout explains what to install.
 
 ## Roadmap / TODO
 
