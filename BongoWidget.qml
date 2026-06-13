@@ -31,6 +31,81 @@ PluginComponent {
     property var deviceOptions: ["All Keyboards (Auto)"]
     property var deviceMap: ({ "All Keyboards (Auto)": "all" })
     readonly property string selectedDevicePath: (pluginData && pluginData.selectedDevicePath !== undefined ? pluginData.selectedDevicePath : "all")
+
+    // Surface silent input-monitor failures (missing CLI tool / missing
+    // input group) instead of leaving the cat motionless without a hint.
+    property bool inputToolMissing: false
+    property bool notInInputGroup: false
+    readonly property bool inputBroken: inputToolMissing || notInInputGroup
+    readonly property string requiredTool: selectedDevicePath === "all" ? "libinput" : "evtest"
+
+    onRequiredToolChanged: {
+        toolCheck.running = false;
+        toolCheck.running = true;
+        clearMouseState();
+        refreshMouseToolCheck();
+    }
+
+    Process {
+        id: toolCheck
+        command: ["sh", "-c", "command -v " + root.requiredTool + " >/dev/null 2>&1"]
+        running: true
+        onExited: (exitCode, exitStatus) => {
+            root.inputToolMissing = (exitCode !== 0);
+        }
+    }
+
+    // When a specific keyboard is selected, its evtest stream contains no
+    // mouse events — those still come from libinput.
+    readonly property bool mouseBroken: mouseEnabled && selectedDevicePath !== "all" && mouseToolMissing
+    property bool mouseToolMissing: false
+
+    onMouseEnabledChanged: {
+        clearMouseState();
+        refreshMouseToolCheck();
+    }
+
+    function refreshMouseToolCheck() {
+        if (mouseEnabled && selectedDevicePath !== "all") {
+            mouseToolCheck.running = false;
+            mouseToolCheck.running = true;
+        }
+    }
+
+    Process {
+        id: mouseToolCheck
+        command: ["sh", "-c", "command -v libinput >/dev/null 2>&1"]
+        running: true
+        onExited: (exitCode, exitStatus) => {
+            root.mouseToolMissing = (exitCode !== 0);
+        }
+    }
+
+    Process {
+        id: mouseProc
+        command: ["libinput", "debug-events"]
+        running: root.mouseEnabled && root.selectedDevicePath !== "all" && !root.mouseToolMissing
+
+        stdout: SplitParser {
+            splitMarker: "\n"
+            onRead: data => {
+                if (data.includes("POINTER_BUTTON") || data.includes("POINTER_SCROLL")) {
+                    root.handlePointerLine(data);
+                }
+            }
+        }
+
+        stderr: StdioCollector {}
+    }
+
+    Process {
+        id: groupCheck
+        command: ["sh", "-c", "id -nG | tr ' ' '\n' | grep -qx input"]
+        running: true
+        onExited: (exitCode, exitStatus) => {
+            root.notInInputGroup = (exitCode !== 0);
+        }
+    }
     onSelectedDevicePathChanged: {
         console.log("[BongoCat] Device selection changed to:", selectedDevicePath);
         inputProc.running = false;
@@ -54,6 +129,114 @@ PluginComponent {
     readonly property real catSize: ((pluginData && pluginData.catSizePercent !== undefined ? pluginData.catSizePercent : 100)) / 100.0
     readonly property int catYOffset: (pluginData && pluginData.catYOffset !== undefined ? pluginData.catYOffset : 0)
     readonly property bool enableBlinking: (pluginData && pluginData.enableBlinking !== undefined ? pluginData.enableBlinking : true)
+    readonly property bool mouseEnabled: (pluginData && pluginData.mouseEnabled !== undefined ? pluginData.mouseEnabled : false)
+
+    // --- Mouse interaction (roadmap item) ---
+    // Keyboard, mouse buttons and scrolling each track their own paw state;
+    // resolveCatState() merges them so no input source can clobber another
+    // (e.g. releasing a key while a mouse button is still held).
+    property int kbState: 0
+    property int mouseState: 0
+    property int scrollState: 0
+    property bool scrollLeftWasLast: false
+    property bool mouseLeftDown: false
+    property bool mouseRightDown: false
+    property bool mouseOtherDown: false
+
+    function resolveCatState() {
+        const states = [kbState, mouseState, scrollState].filter(s => s !== 0);
+        if (states.length === 0) {
+            catState = 0;
+        } else if (states.indexOf(3) !== -1 || (states.indexOf(1) !== -1 && states.indexOf(2) !== -1)) {
+            catState = 3;
+        } else {
+            catState = states[0];
+        }
+    }
+
+    function updateMousePaws() {
+        isWaiting = false;
+        if ((mouseLeftDown && mouseRightDown) || mouseOtherDown) {
+            mouseState = 3;
+        } else if (mouseLeftDown) {
+            mouseState = 1;
+        } else if (mouseRightDown) {
+            mouseState = 2;
+        } else {
+            mouseState = 0;
+        }
+        resolveCatState();
+        waitingTimer.restart();
+    }
+
+    function clearMouseState() {
+        mouseLeftDown = false;
+        mouseRightDown = false;
+        mouseOtherDown = false;
+        mouseState = 0;
+        scrollState = 0;
+        scrollReleaseTimer.stop();
+        resolveCatState();
+    }
+
+    function onMouseButton(buttonName, pressed) {
+        if (buttonName === "BTN_LEFT") {
+            mouseLeftDown = pressed;
+        } else if (buttonName === "BTN_RIGHT") {
+            mouseRightDown = pressed;
+        } else {
+            mouseOtherDown = pressed;
+        }
+        updateMousePaws();
+    }
+
+    function onScrollTick() {
+        isWaiting = false;
+        scrollReleaseTimer.restart();
+        waitingTimer.restart();
+        // Rate-limit the drumming so fast touchpad scrolling doesn't strobe
+        if (scrollThrottle.running)
+            return;
+        scrollThrottle.restart();
+        scrollLeftWasLast = !scrollLeftWasLast;
+        scrollState = scrollLeftWasLast ? 1 : 2;
+        resolveCatState();
+    }
+
+    Timer {
+        id: scrollThrottle
+        interval: 75
+        repeat: false
+    }
+
+    Timer {
+        id: scrollReleaseTimer
+        interval: 150
+        repeat: false
+        onTriggered: {
+            root.scrollState = 0;
+            root.resolveCatState();
+        }
+    }
+
+    function handlePointerLine(data) {
+        if (data.includes("POINTER_BUTTON")) {
+            const match = data.match(/(BTN_[A-Z0-9_]+)/);
+            const name = match ? match[1] : "BTN_OTHER";
+            if (data.includes("pressed")) {
+                root.onMouseButton(name, true);
+            } else if (data.includes("released")) {
+                root.onMouseButton(name, false);
+            }
+        } else if (data.includes("POINTER_SCROLL")) {
+            // Ignore scroll-stop events (zero on both axes)
+            const vert = data.match(/vert\s+(-?\d+(?:\.\d+)?)/);
+            const horiz = data.match(/horiz\s+(-?\d+(?:\.\d+)?)/);
+            if (vert && horiz && parseFloat(vert[1]) === 0 && parseFloat(horiz[1]) === 0)
+                return;
+            root.onScrollTick();
+        }
+    }
     readonly property int waitingTimeout: ((pluginData && pluginData.waitingTimeout !== undefined ? pluginData.waitingTimeout : 5)) * 1000
 
     readonly property int pawHoldTime: (pluginData && pluginData.pawHoldTime !== undefined ? pluginData.pawHoldTime : 0)
@@ -173,14 +356,15 @@ PluginComponent {
         if (isBigHit) {
             targetState = 3;
         } else {
-            if (catState !== 0) {
+            if (kbState !== 0) {
                 targetState = 3;
             } else {
                 leftWasLast = !leftWasLast;
                 targetState = leftWasLast ? 1 : 2;
             }
         }
-        catState = targetState;
+        kbState = targetState;
+        resolveCatState();
         waitingTimer.restart();
     }
 
@@ -189,7 +373,7 @@ PluginComponent {
         if (isBigHit) {
             targetState = 0;
         } else {
-            if (catState === 3) {
+            if (kbState === 3) {
                 targetState = leftWasLast ? 1 : 2;
             } else {
                 targetState = 0;
@@ -199,15 +383,16 @@ PluginComponent {
             pawHoldTimer.interval = root.pawHoldTime;
             pawHoldTimer.restart();
         } else {
-            catState = targetState;
+            kbState = targetState;
+            resolveCatState();
         }
     }
 
     function onKeyRepeat(isBigHit) {
         isWaiting = false;
         let targetState;
-        if (catState !== 0) {
-            targetState = catState;
+        if (kbState !== 0) {
+            targetState = kbState;
         } else {
             if (isBigHit) {
                 targetState = 3;
@@ -215,21 +400,30 @@ PluginComponent {
                 targetState = leftWasLast ? 1 : 2;
             }
         }
-        catState = targetState;
+        kbState = targetState;
+        resolveCatState();
         waitingTimer.restart();
     }
 
     Timer {
         id: waitingTimer
         interval: root.waitingTimeout
-        onTriggered: isWaiting = true
+        onTriggered: {
+            // Don't fall asleep while a mouse button is physically held
+            if (root.mouseLeftDown || root.mouseRightDown || root.mouseOtherDown) {
+                restart();
+                return;
+            }
+            isWaiting = true;
+        }
     }
 
     Timer {
         id: pawHoldTimer
         onTriggered: {
-            if (catState !== 0) {
-                catState = 0;
+            if (kbState !== 0) {
+                kbState = 0;
+                resolveCatState();
             }
         }
     }
@@ -355,6 +549,8 @@ PluginComponent {
                     } else if (data.includes("value 2")) {
                         root.onKeyRepeat(isBigHit);
                     }
+                } else if (root.mouseEnabled && (data.includes("POINTER_BUTTON") || data.includes("POINTER_SCROLL"))) {
+                    root.handlePointerLine(data);
                 } else if (data.includes("KEYBOARD_KEY")) {
                     const keyMatch = data.match(/(KEY_[A-Z0-9_]+)/);
                     const keyName = keyMatch ? keyMatch[1] : "";
@@ -437,6 +633,15 @@ PluginComponent {
                     opacity: root.forceSleep ? 0.5 : 1.0
                 }
             }
+
+            DankIcon {
+                visible: root.inputBroken
+                name: "warning"
+                size: 11
+                color: Theme.error
+                anchors.top: parent.top
+                anchors.right: parent.right
+            }
         }
     }
 
@@ -457,7 +662,53 @@ PluginComponent {
             Column {
                 width: parent.width
                 spacing: Theme.spacingL
-                
+
+                Rectangle {
+                    width: parent.width
+                    visible: root.inputBroken || root.mouseBroken
+                    radius: Theme.cornerRadius
+                    color: Theme.errorHover
+                    implicitHeight: warnCol.implicitHeight + Theme.spacingM * 2
+
+                    Column {
+                        id: warnCol
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.margins: Theme.spacingM
+                        spacing: Theme.spacingXS
+
+                        StyledText {
+                            width: parent.width
+                            visible: root.inputToolMissing
+                            text: root.selectedDevicePath === "all"
+                                ? I18n.tr("The 'libinput' CLI was not found, so Auto mode can't see your keyboard. Install it (Arch: libinput-tools, Debian/Ubuntu: libinput-tools, Fedora: libinput-utils) or pick a specific keyboard below.")
+                                : I18n.tr("'evtest' was not found — install it to monitor a specific keyboard, or switch to Auto mode.")
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: Theme.error
+                            wrapMode: Text.Wrap
+                        }
+
+                        StyledText {
+                            width: parent.width
+                            visible: root.notInInputGroup
+                            text: I18n.tr("Your user is not in the 'input' group, so keyboard events can't be read. Run: sudo usermod -aG input $USER — then log out and back in.")
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: Theme.error
+                            wrapMode: Text.Wrap
+                        }
+
+                        StyledText {
+                            width: parent.width
+                            visible: root.mouseBroken
+                            text: I18n.tr("Mouse interaction needs the 'libinput' CLI — install it (Arch: libinput-tools, Debian/Ubuntu: libinput-tools, Fedora: libinput-utils) or switch the keyboard to Auto mode.")
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: Theme.error
+                            wrapMode: Text.Wrap
+                        }
+                    }
+                }
+
                 StyledRect {
                     width: parent.width
                     height: 140
