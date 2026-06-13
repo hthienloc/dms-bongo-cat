@@ -75,11 +75,14 @@ PluginSettings {
         SectionTitle { 
             text: I18n.tr("Input & Behavior")
             icon: "keyboard" 
-            showReset: waitingTimeout.isDirty || pawHoldTime.isDirty || mouseEnabled.isDirty
+            showReset: waitingTimeout.isDirty || pawHoldTime.isDirty || mouseEnabled.isDirty || showMetrics.isDirty || metricsInBar.isDirty || metricsWindow.isDirty
             onResetClicked: {
                 waitingTimeout.resetToDefault();
                 pawHoldTime.resetToDefault();
                 mouseEnabled.resetToDefault();
+                showMetrics.resetToDefault();
+                metricsInBar.resetToDefault();
+                metricsWindow.resetToDefault();
             }
         }
 
@@ -119,6 +122,41 @@ PluginSettings {
             label: I18n.tr("Mouse Interaction")
             description: I18n.tr("Paws react to mouse input: left and right click hold the matching paw, other buttons slam both, scrolling drums with alternating paws.")
             defaultValue: false
+        }
+
+        Separator {}
+
+        ToggleSettingPlus {
+            id: showMetrics
+            settingKey: "showMetrics"
+            label: I18n.tr("Show Typing Metrics")
+            description: I18n.tr("Display live typing speed (WPM) and correction rate in the popout. Only keystroke timing is counted; no key contents are stored.")
+            defaultValue: false
+        }
+
+        Separator {}
+
+        ToggleSettingPlus {
+            id: metricsInBar
+            settingKey: "metricsInBar"
+            label: I18n.tr("Show Metrics in Bar")
+            description: I18n.tr("Also show WPM and correction rate next to the cat in the bar.")
+            defaultValue: false
+        }
+
+        Separator {}
+
+        SliderSettingPlus {
+            id: metricsWindow
+            settingKey: "metricsWindowSec"
+            label: I18n.tr("Measurement Window")
+            description: I18n.tr("Time span the speed and correction rate are averaged over.")
+            minimum: 5
+            maximum: 120
+            unit: "s"
+            defaultValue: 60
+            leftLabel: "5s"
+            rightLabel: "120s"
         }
     }
 

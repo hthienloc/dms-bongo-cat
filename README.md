@@ -22,6 +22,7 @@ git clone https://github.com/hthienloc/dms-bongo-cat ~/.config/DankMaterialShell
 - **Blink & sleep** - Cat blinks when active, sleeps after inactivity
 - **Adjustable size** - Customize cat size from 50% to 200%
 - **Mouse interaction (optional)** - A left/right click holds the matching paw, other buttons slam both, scrolling drums with alternating paws. Enable it in the settings; with a specific keyboard selected this uses an additional `libinput debug-events` monitor.
+- **Typing metrics (optional)** - Live words-per-minute and correction rate in the popout. Only keystroke timing is counted — no key contents are stored or logged. Enable it in the settings.
 
 ## Usage
 
@@ -47,7 +48,7 @@ If the input monitor can't run (missing tool or missing group membership), the c
 
 - [x] **Improved Key-Hold Logic:** Refine input polling to ensure paws stay down during sustained key presses.
 - [x] **Mouse Interaction:** Animate paws reacting to mouse button clicks and scroll events.
-- [ ] **Performance Metrics (WPM):** Optional overlay showing real-time typing speed and accuracy.
+- [x] **Performance Metrics (WPM):** Live typing speed and correction rate in the popout.
 - [ ] **Extended Skin Library:** Support for loading custom SVG/PNG skins and different "cat" variants (e.g., Robot-cat, Ghost-cat).
 - [ ] **Audio Feedback:** Optional haptic-like mechanical keyboard sound effects on every keystroke.
 

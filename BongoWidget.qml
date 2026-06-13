@@ -110,6 +110,7 @@ PluginComponent {
         console.log("[BongoCat] Device selection changed to:", selectedDevicePath);
         inputProc.running = false;
         inputRestartTimer.restart();
+        resetMetrics();
     }
 
     Timer {
@@ -240,6 +241,89 @@ PluginComponent {
 
     readonly property int pawHoldTime: (pluginData && pluginData.pawHoldTime !== undefined ? pluginData.pawHoldTime : 0)
     readonly property bool activeColor: (pluginData && pluginData.activeColor !== undefined ? pluginData.activeColor : false)
+
+    // --- Typing metrics (roadmap item) ---
+    // Optional WPM + correction-rate overlay. Only keystroke *timing* is counted;
+    // no key contents are ever stored or logged. Numbers are computed over a
+    // sliding 60s window so they reflect recent typing, not the whole session.
+    readonly property bool showMetrics: (pluginData && pluginData.showMetrics !== undefined ? pluginData.showMetrics : false)
+    readonly property bool metricsInBar: (pluginData && pluginData.metricsInBar !== undefined ? pluginData.metricsInBar : false)
+    readonly property int metricsWindowSec: (pluginData && pluginData.metricsWindowSec !== undefined ? pluginData.metricsWindowSec : 60)
+    readonly property int metricsWindowMs: metricsWindowSec * 1000
+
+    property int liveWpm: 0
+    property int cleanPercent: 100
+    // Plain timestamp buffers (ms). Read/written only in code, never in bindings.
+    property var _charStamps: []
+    property var _correctionStamps: []
+
+    // Keys that produce no character and must not inflate WPM.
+    readonly property var _nonCharKeys: ({
+        "KEY_LEFTSHIFT": 1, "KEY_RIGHTSHIFT": 1, "KEY_LEFTCTRL": 1, "KEY_RIGHTCTRL": 1,
+        "KEY_LEFTALT": 1, "KEY_RIGHTALT": 1, "KEY_LEFTMETA": 1, "KEY_RIGHTMETA": 1,
+        "KEY_CAPSLOCK": 1, "KEY_NUMLOCK": 1, "KEY_SCROLLLOCK": 1,
+        "KEY_ESC": 1, "KEY_ENTER": 1, "KEY_KPENTER": 1, "KEY_TAB": 1,
+        "KEY_LEFT": 1, "KEY_RIGHT": 1, "KEY_UP": 1, "KEY_DOWN": 1,
+        "KEY_HOME": 1, "KEY_END": 1, "KEY_PAGEUP": 1, "KEY_PAGEDOWN": 1, "KEY_INSERT": 1,
+        "KEY_COMPOSE": 1, "KEY_MENU": 1, "KEY_SYSRQ": 1, "KEY_PAUSE": 1
+    })
+
+    // Returns "char" | "correction" | "ignore".
+    function classifyKey(name) {
+        if (name === "KEY_BACKSPACE" || name === "KEY_DELETE")
+            return "correction";
+        if (_nonCharKeys[name] || /^KEY_F\d+$/.test(name))
+            return "ignore";
+        return "char";
+    }
+
+    // Called on every key press. With --show-keycodes a real KEY_ name is
+    // always present; an empty name means a non-key EV_KEY event (e.g. a mouse
+    // BTN_ on a combo device), which must not count toward typing metrics.
+    function recordKeystroke(keyName) {
+        if (!showMetrics || !keyName)
+            return;
+        const kind = classifyKey(keyName);
+        if (kind === "ignore")
+            return;
+        if (kind === "correction")
+            _correctionStamps.push(Date.now());
+        else
+            _charStamps.push(Date.now());
+    }
+
+    function _pruneAndCompute() {
+        const cutoff = Date.now() - metricsWindowMs;
+        _charStamps = _charStamps.filter(t => t >= cutoff);
+        _correctionStamps = _correctionStamps.filter(t => t >= cutoff);
+        const chars = _charStamps.length;
+        const corrections = _correctionStamps.length;
+        // 5 chars = 1 word; scale the window count up to a per-minute rate.
+        liveWpm = metricsWindowMs > 0 ? Math.round(chars / 5 * 60000 / metricsWindowMs) : 0;
+        cleanPercent = (chars + corrections) > 0
+            ? Math.round(100 * chars / (chars + corrections))
+            : 100;
+    }
+
+    function resetMetrics() {
+        _charStamps = [];
+        _correctionStamps = [];
+        liveWpm = 0;
+        cleanPercent = 100;
+    }
+
+    onShowMetricsChanged: resetMetrics()
+    // Widening the window would otherwise show a misleadingly low reading until
+    // the (already-pruned) buffer refills; reset so it starts fresh.
+    onMetricsWindowSecChanged: resetMetrics()
+
+    Timer {
+        id: metricsTicker
+        interval: 1000
+        repeat: true
+        running: root.showMetrics
+        onTriggered: root._pruneAndCompute()
+    }
 
     function saveSetting(key, value) {
         try {
@@ -440,7 +524,12 @@ PluginComponent {
     Process {
         id: inputProc
         command: {
-            const cmd = selectedDevicePath === "all" ? ["libinput", "debug-events"] : ["evtest", selectedDevicePath];
+            // --show-keycodes makes libinput emit real key names (otherwise masked
+            // as "***"), which lets us classify keystrokes for metrics and detect
+            // big-hit keys in Auto mode.
+            const cmd = selectedDevicePath === "all"
+                ? ["libinput", "debug-events", "--show-keycodes"]
+                : ["evtest", selectedDevicePath];
             console.log("[BongoCat] Starting input process with command:", JSON.stringify(cmd));
             return cmd;
         }
@@ -450,8 +539,11 @@ PluginComponent {
             splitMarker: "\n"
             onRead: data => {
                 if (data.includes("EV_KEY")) {
-                    const isBigHit = data.includes("KEY_SPACE") || data.includes("KEY_ENTER") || data.includes("KEY_KPENTER");
+                    const keyMatch = data.match(/(KEY_[A-Z0-9_]+)/);
+                    const keyName = keyMatch ? keyMatch[1] : "";
+                    const isBigHit = keyName === "KEY_SPACE" || keyName === "KEY_ENTER" || keyName === "KEY_KPENTER";
                     if (data.includes("value 1")) {
+                        root.recordKeystroke(keyName);
                         root.onKeyPress(isBigHit);
                     } else if (data.includes("value 0")) {
                         root.onKeyRelease(isBigHit);
@@ -461,8 +553,11 @@ PluginComponent {
                 } else if (root.mouseEnabled && (data.includes("POINTER_BUTTON") || data.includes("POINTER_SCROLL"))) {
                     root.handlePointerLine(data);
                 } else if (data.includes("KEYBOARD_KEY")) {
-                    const isBigHit = data.includes("KEY_SPACE") || data.includes("KEY_ENTER") || data.includes("KEY_KPENTER");
+                    const keyMatch = data.match(/(KEY_[A-Z0-9_]+)/);
+                    const keyName = keyMatch ? keyMatch[1] : "";
+                    const isBigHit = keyName === "KEY_SPACE" || keyName === "KEY_ENTER" || keyName === "KEY_KPENTER";
                     if (data.includes("pressed")) {
+                        root.recordKeystroke(keyName);
                         root.onKeyPress(isBigHit);
                     } else if (data.includes("released")) {
                         root.onKeyRelease(isBigHit);
@@ -484,8 +579,8 @@ PluginComponent {
 
     horizontalBarPill: Component {
         Item {
-            implicitWidth: catLabel.implicitWidth + Theme.spacingS
-            implicitHeight: Theme.iconSize
+            implicitWidth: pillContent.implicitWidth + Theme.spacingS
+            implicitHeight: Math.max(Theme.iconSize, pillContent.implicitHeight)
 
             MouseArea {
                 id: clickArea
@@ -509,15 +604,35 @@ PluginComponent {
                 }
             }
 
-            Text {
-                id: catLabel
+            // Cat glyph plus an optional metrics readout. Grid switches between
+            // side-by-side (horizontal bar) and stacked (vertical bar) so the
+            // pill stays compact in either orientation.
+            Grid {
+                id: pillContent
                 anchors.centerIn: parent
-                anchors.verticalCenterOffset: root.catYOffset
-                font.family: bongoFont.name
-                font.pixelSize: 24 * root.catSize
-                color: root.forceSleep ? Theme.surfaceVariantText : ((root.activeColor && !root.isWaiting) ? Theme.primary : Theme.surfaceText)
-                opacity: root.forceSleep ? 0.5 : 1.0
-                text: root.forceSleep ? root.sleepGlyph : (root.isWaiting ? root.sleepGlyph : (root.isBlinking && root.catState === 0 ? root.blinkGlyph : root.glyphMap[root.catState]))
+                columns: root.isVertical ? 1 : 2
+                columnSpacing: Theme.spacingXS
+                rowSpacing: 0
+                horizontalItemAlignment: Grid.AlignHCenter
+                verticalItemAlignment: Grid.AlignVCenter
+
+                Text {
+                    id: catLabel
+                    font.family: bongoFont.name
+                    font.pixelSize: 24 * root.catSize
+                    color: root.forceSleep ? Theme.surfaceVariantText : ((root.activeColor && !root.isWaiting) ? Theme.primary : Theme.surfaceText)
+                    opacity: root.forceSleep ? 0.5 : 1.0
+                    text: root.forceSleep ? root.sleepGlyph : (root.isWaiting ? root.sleepGlyph : (root.isBlinking && root.catState === 0 ? root.blinkGlyph : root.glyphMap[root.catState]))
+                    transform: Translate { y: root.catYOffset }
+                }
+
+                StyledText {
+                    visible: root.showMetrics && root.metricsInBar
+                    text: root.liveWpm + " · " + root.cleanPercent + "%"
+                    font.pixelSize: Theme.fontSizeSmall
+                    color: root.forceSleep ? Theme.surfaceVariantText : Theme.surfaceText
+                    opacity: root.forceSleep ? 0.5 : 1.0
+                }
             }
 
             DankIcon {
@@ -619,6 +734,63 @@ PluginComponent {
                         font.letterSpacing: -2
                         color: popout.isActive ? Theme.onPrimaryContainer : Theme.surfaceText
                         text: root.forceSleep ? root.sleepGlyph : (!popout.isActive ? root.sleepGlyph : (root.isBlinking && root.catState === 0 ? root.blinkGlyph : root.glyphMap[root.catState]))
+                    }
+                }
+
+                // Typing metrics overlay (optional)
+                Row {
+                    width: parent.width
+                    visible: root.showMetrics
+                    spacing: Theme.spacingM
+
+                    StyledRect {
+                        width: (parent.width - Theme.spacingM) / 2
+                        height: 64
+                        radius: Theme.cornerRadius
+                        color: Theme.surfaceContainerHigh
+
+                        Column {
+                            anchors.centerIn: parent
+                            spacing: 0
+                            StyledText {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: root.liveWpm
+                                font.pixelSize: Theme.fontSizeLarge
+                                font.weight: Font.Bold
+                                color: Theme.primary
+                            }
+                            StyledText {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: "WPM"
+                                font.pixelSize: Theme.fontSizeExtraSmall
+                                color: Theme.surfaceVariantText
+                            }
+                        }
+                    }
+
+                    StyledRect {
+                        width: (parent.width - Theme.spacingM) / 2
+                        height: 64
+                        radius: Theme.cornerRadius
+                        color: Theme.surfaceContainerHigh
+
+                        Column {
+                            anchors.centerIn: parent
+                            spacing: 0
+                            StyledText {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: root.cleanPercent + "%"
+                                font.pixelSize: Theme.fontSizeLarge
+                                font.weight: Font.Bold
+                                color: Theme.primary
+                            }
+                            StyledText {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: "Clean"
+                                font.pixelSize: Theme.fontSizeExtraSmall
+                                color: Theme.surfaceVariantText
+                            }
+                        }
                     }
                 }
 
@@ -833,11 +1005,10 @@ PluginComponent {
                     }
 
                     // Quick Toggles
-                    Row {
+                    Flow {
                         width: parent.width
-                        height: 40
                         spacing: Theme.spacingL
-                        
+
                         // Blink Toggle
                         Row {
                             spacing: Theme.spacingS
@@ -876,6 +1047,28 @@ PluginComponent {
                             }
                             StyledText {
                                 text: "Active Color"
+                                font.pixelSize: Theme.fontSizeSmall
+                                color: Theme.surfaceText
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                        }
+
+                        // Metrics Toggle
+                        Row {
+                            spacing: Theme.spacingS
+                            DankIcon {
+                                name: "speed"
+                                size: 22
+                                color: root.showMetrics ? Theme.primary : Theme.surfaceText
+                                opacity: root.showMetrics ? 1.0 : 0.4
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.saveSetting("showMetrics", !root.showMetrics)
+                                }
+                            }
+                            StyledText {
+                                text: "Metrics"
                                 font.pixelSize: Theme.fontSizeSmall
                                 color: Theme.surfaceText
                                 anchors.verticalCenter: parent.verticalCenter
