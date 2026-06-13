@@ -45,7 +45,7 @@ If the input monitor can't run (missing tool or missing group membership), the c
 
 ## Roadmap / TODO
 
-- [ ] **Improved Key-Hold Logic:** Refine input polling to ensure paws stay down during sustained key presses.
+- [x] **Improved Key-Hold Logic:** Refine input polling to ensure paws stay down during sustained key presses.
 - [x] **Mouse Interaction:** Animate paws reacting to mouse button clicks and scroll events.
 - [ ] **Performance Metrics (WPM):** Optional overlay showing real-time typing speed and accuracy.
 - [ ] **Extended Skin Library:** Support for loading custom SVG/PNG skins and different "cat" variants (e.g., Robot-cat, Ghost-cat).
