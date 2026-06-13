@@ -277,12 +277,13 @@ PluginComponent {
         return "char";
     }
 
-    // Called on every key press. keyName is "" when libinput masks it (no
-    // --show-keycodes); we then treat it as a generic character stroke.
+    // Called on every key press. With --show-keycodes a real KEY_ name is
+    // always present; an empty name means a non-key EV_KEY event (e.g. a mouse
+    // BTN_ on a combo device), which must not count toward typing metrics.
     function recordKeystroke(keyName) {
-        if (!showMetrics)
+        if (!showMetrics || !keyName)
             return;
-        const kind = keyName ? classifyKey(keyName) : "char";
+        const kind = classifyKey(keyName);
         if (kind === "ignore")
             return;
         if (kind === "correction")
@@ -298,7 +299,7 @@ PluginComponent {
         const chars = _charStamps.length;
         const corrections = _correctionStamps.length;
         // 5 chars = 1 word; scale the window count up to a per-minute rate.
-        liveWpm = Math.round(chars / 5 * 60000 / metricsWindowMs);
+        liveWpm = metricsWindowMs > 0 ? Math.round(chars / 5 * 60000 / metricsWindowMs) : 0;
         cleanPercent = (chars + corrections) > 0
             ? Math.round(100 * chars / (chars + corrections))
             : 100;
