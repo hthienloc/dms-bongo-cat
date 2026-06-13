@@ -134,29 +134,41 @@ PluginSettings {
             defaultValue: false
         }
 
-        Separator {}
+        Column {
+            width: parent.width
+            visible: showMetrics.value
+            height: visible ? implicitHeight : 0
+            spacing: inputSection.spacing
 
-        ToggleSettingPlus {
-            id: metricsInBar
-            settingKey: "metricsInBar"
-            label: I18n.tr("Show Metrics in Bar")
-            description: I18n.tr("Also show WPM and correction rate next to the cat in the bar.")
-            defaultValue: false
-        }
+            function loadValue() {
+                metricsInBar.loadValue();
+                metricsWindow.loadValue();
+            }
 
-        Separator {}
+            Separator {}
 
-        SliderSettingPlus {
-            id: metricsWindow
-            settingKey: "metricsWindowSec"
-            label: I18n.tr("Measurement Window")
-            description: I18n.tr("Time span the speed and correction rate are averaged over.")
-            minimum: 5
-            maximum: 120
-            unit: "s"
-            defaultValue: 60
-            leftLabel: "5s"
-            rightLabel: "120s"
+            ToggleSettingPlus {
+                id: metricsInBar
+                settingKey: "metricsInBar"
+                label: I18n.tr("Show Metrics in Bar")
+                description: I18n.tr("Also show WPM and correction rate next to the cat in the bar.")
+                defaultValue: false
+            }
+
+            Separator {}
+
+            SliderSettingPlus {
+                id: metricsWindow
+                settingKey: "metricsWindowSec"
+                label: I18n.tr("Measurement Window")
+                description: I18n.tr("Time span the speed and correction rate are averaged over.")
+                minimum: 5
+                maximum: 120
+                unit: "s"
+                defaultValue: 60
+                leftLabel: "5s"
+                rightLabel: "120s"
+            }
         }
     }
 
