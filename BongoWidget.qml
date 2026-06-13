@@ -252,7 +252,7 @@ PluginComponent {
             return "primary";
         return "classic";
     }
-    readonly property string catCustomColor: (pluginData && pluginData.catCustomColor !== undefined && pluginData.catCustomColor !== "")
+    readonly property string catCustomColor: (pluginData && pluginData.catCustomColor)
         ? pluginData.catCustomColor : "primary"
     readonly property color resolvedCatColor: {
         if (catColorMode === "primary")
@@ -547,6 +547,9 @@ PluginComponent {
         });
     }
 
+    // pluginData may still be empty when Component.onCompleted runs, so also
+    // migrate whenever it (re)loads. migrateColorSetting() is idempotent.
+    onPluginDataChanged: migrateColorSetting()
     Component.onCompleted: {
         fetchDevices();
         migrateColorSetting();
