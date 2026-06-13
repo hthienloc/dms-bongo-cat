@@ -21,6 +21,7 @@ git clone https://github.com/hthienloc/dms-bongo-cat ~/.config/DankMaterialShell
 - **Real-time typing** - Cat reacts to your keyboard input.
 - **Blink & sleep** - Blinks when active, sleeps after inactivity.
 - **Adjustable size** - Customize from 50% to 200%.
+- **Cat color** - Keep classic black & white, follow your theme's accent, or pick a custom color.
 - **Mouse interaction (optional)** - Paws react to clicks and scrolling (enable in settings).
 - **Typing metrics (optional)** - Live WPM and accuracy tracking with a privacy-first approach.
 
