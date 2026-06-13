@@ -18,11 +18,11 @@ git clone https://github.com/hthienloc/dms-bongo-cat ~/.config/DankMaterialShell
 
 ## Features
 
-- **Real-time typing** - Cat reacts to your keyboard input
-- **Blink & sleep** - Cat blinks when active, sleeps after inactivity
-- **Adjustable size** - Customize cat size from 50% to 200%
-- **Mouse interaction (optional)** - A left/right click holds the matching paw, other buttons slam both, scrolling drums with alternating paws. Enable it in the settings; with a specific keyboard selected this uses an additional `libinput debug-events` monitor.
-- **Typing metrics (optional)** - Live words-per-minute and correction rate in the popout. Only keystroke timing is counted — no key contents are stored or logged. Enable it in the settings.
+- **Real-time typing** - Cat reacts to your keyboard input.
+- **Blink & sleep** - Blinks when active, sleeps after inactivity.
+- **Adjustable size** - Customize from 50% to 200%.
+- **Mouse interaction (optional)** - Paws react to clicks and scrolling (enable in settings).
+- **Typing metrics (optional)** - Live WPM and accuracy tracking with a privacy-first approach.
 
 ## Usage
 
@@ -32,25 +32,26 @@ git clone https://github.com/hthienloc/dms-bongo-cat ~/.config/DankMaterialShell
 | Right click | Toggle sleep mode |
 
 ### Keyboard Selection
-You can select a specific keyboard from the dropdown menu in the settings. This is useful if you have multiple input devices and want the cat to only react to a specific one.
-
-**Note:** The device filtering is currently based on a manual exclusion list. If you have a peripheral (like a mouse or headset) that is incorrectly identified as a keyboard and appears in the list, please **open an issue** with the device name so it can be added to the exclusion list.
+Select a specific keyboard in settings to filter input. If a non-keyboard device appears in the list, please **open an issue**.
 
 ## Requirements
 
-- `evtest` - Primary tool for monitoring specific keyboard events.
-- `libinput` **CLI** - Required only for **"All Keyboards (Auto)"** mode. Note: on many distros the CLI ships separately from the libinput library — Arch/CachyOS & Debian/Ubuntu: `libinput-tools`, Fedora: `libinput-utils`.
-- User must be in `input` group: `sudo usermod -aG input $USER` (log out and back in afterwards)
+- `evtest` - For monitoring specific keyboard events.
+- `libinput` **CLI** - For **"All Keyboards"** mode.
+- **Input group** - User must be in the `input` group: `sudo usermod -aG input $USER`.
 
-If the input monitor can't run (missing tool or missing group membership), the cat shows a warning badge and the settings popout explains what to install.
+> [!NOTE]
+> On many distros, the libinput CLI is in a separate package: `libinput-tools` (Arch/Debian/Ubuntu) or `libinput-utils` (Fedora). Logout and back in after adding your user to the input group.
+
+If a requirement is missing, the cat shows a warning badge with setup instructions.
 
 ## Roadmap / TODO
 
-- [x] **Improved Key-Hold Logic:** Refine input polling to ensure paws stay down during sustained key presses.
-- [x] **Mouse Interaction:** Animate paws reacting to mouse button clicks and scroll events.
-- [x] **Performance Metrics (WPM):** Live typing speed and correction rate in the popout.
-- [ ] **Extended Skin Library:** Support for loading custom SVG/PNG skins and different "cat" variants (e.g., Robot-cat, Ghost-cat).
-- [ ] **Audio Feedback:** Optional haptic-like mechanical keyboard sound effects on every keystroke.
+- [x] **Improved Key-Hold Logic:** Refine input polling for sustained key presses.
+- [x] **Mouse Interaction:** Animate paws reacting to clicks and scrolling.
+- [x] **Performance Metrics (WPM):** Live typing speed and correction rate.
+- [ ] **Extended Skin Library:** Support for custom skins and cat variants.
+- [ ] **Audio Feedback:** Optional mechanical keyboard sound effects.
 
 ## License
 
