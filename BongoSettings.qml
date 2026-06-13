@@ -67,6 +67,7 @@ PluginSettings {
             label: I18n.tr("Enable Blinking")
             defaultValue: true
         }
+
     }
 
     SettingsCard {
@@ -74,10 +75,11 @@ PluginSettings {
         SectionTitle { 
             text: I18n.tr("Input & Behavior")
             icon: "keyboard" 
-            showReset: waitingTimeout.isDirty || pawHoldTime.isDirty
+            showReset: waitingTimeout.isDirty || pawHoldTime.isDirty || mouseEnabled.isDirty
             onResetClicked: {
                 waitingTimeout.resetToDefault();
                 pawHoldTime.resetToDefault();
+                mouseEnabled.resetToDefault();
             }
         }
 
@@ -107,6 +109,16 @@ PluginSettings {
             defaultValue: 0
             leftLabel: "0ms"
             rightLabel: "100ms"
+        }
+
+        Separator {}
+
+        ToggleSettingPlus {
+            id: mouseEnabled
+            settingKey: "mouseEnabled"
+            label: I18n.tr("Mouse Interaction")
+            description: I18n.tr("Paws react to mouse input: left and right click hold the matching paw, other buttons slam both, scrolling drums with alternating paws.")
+            defaultValue: false
         }
     }
 

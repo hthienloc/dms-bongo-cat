@@ -20,5 +20,8 @@
   "Usage Guide": "Usage Guide",
   "The 'libinput' CLI was not found, so Auto mode can't see your keyboard. Install it (Arch: libinput-tools, Debian/Ubuntu: libinput-tools, Fedora: libinput-utils) or pick a specific keyboard below.": "The 'libinput' CLI was not found, so Auto mode can't see your keyboard. Install it (Arch: libinput-tools, Debian/Ubuntu: libinput-tools, Fedora: libinput-utils) or pick a specific keyboard below.",
   "'evtest' was not found — install it to monitor a specific keyboard, or switch to Auto mode.": "'evtest' was not found — install it to monitor a specific keyboard, or switch to Auto mode.",
-  "Your user is not in the 'input' group, so keyboard events can't be read. Run: sudo usermod -aG input $USER — then log out and back in.": "Your user is not in the 'input' group, so keyboard events can't be read. Run: sudo usermod -aG input $USER — then log out and back in."
+  "Your user is not in the 'input' group, so keyboard events can't be read. Run: sudo usermod -aG input $USER — then log out and back in.": "Your user is not in the 'input' group, so keyboard events can't be read. Run: sudo usermod -aG input $USER — then log out and back in.",
+  "Mouse Interaction": "Mouse Interaction",
+  "Paws react to mouse input: left and right click hold the matching paw, other buttons slam both, scrolling drums with alternating paws.": "Paws react to mouse input: left and right click hold the matching paw, other buttons slam both, scrolling drums with alternating paws.",
+  "Mouse interaction needs the 'libinput' CLI — install it (Arch: libinput-tools, Debian/Ubuntu: libinput-tools, Fedora: libinput-utils) or switch the keyboard to Auto mode.": "Mouse interaction needs the 'libinput' CLI — install it (Arch: libinput-tools, Debian/Ubuntu: libinput-tools, Fedora: libinput-utils) or switch the keyboard to Auto mode."
 }
