@@ -52,7 +52,6 @@ If a requirement is missing, the cat shows a warning badge with setup instructio
 - [x] **Mouse Interaction:** Animate paws reacting to clicks and scrolling.
 - [x] **Performance Metrics (WPM):** Live typing speed and correction rate.
 - [ ] **Extended Skin Library:** Support for custom skins and cat variants.
-- [ ] **Audio Feedback:** Optional mechanical keyboard sound effects.
 
 ## License
 
