@@ -240,7 +240,41 @@ PluginComponent {
     readonly property int waitingTimeout: ((pluginData && pluginData.waitingTimeout !== undefined ? pluginData.waitingTimeout : 5)) * 1000
 
     readonly property int pawHoldTime: (pluginData && pluginData.pawHoldTime !== undefined ? pluginData.pawHoldTime : 0)
-    readonly property bool activeColor: (pluginData && pluginData.activeColor !== undefined ? pluginData.activeColor : false)
+    // --- Cat color (roadmap: cat variants) ---
+    // Permanent recolor of the cat. "classic" keeps the theme's default
+    // black/white look, "primary" follows the system accent, "custom" uses a
+    // user-picked hex. Migrated from the legacy boolean "activeColor".
+    readonly property string catColorMode: {
+        if (pluginData && pluginData.catColorMode !== undefined)
+            return pluginData.catColorMode;
+        // Legacy: the old on/off "Use Primary Color" toggle maps to primary.
+        if (pluginData && pluginData.activeColor === true)
+            return "primary";
+        return "classic";
+    }
+    readonly property string catCustomColor: (pluginData && pluginData.catCustomColor)
+        ? pluginData.catCustomColor : "primary"
+    readonly property color resolvedCatColor: {
+        if (catColorMode === "primary")
+            return Theme.primary;
+        if (catColorMode === "custom")
+            return catCustomColor === "primary" ? Theme.primary : Qt.color(catCustomColor);
+        return Theme.surfaceText;
+    }
+
+    // Label/value mapping for the popout dropdown (DankDropdown is label-based).
+    // Both directions go through I18n.tr() so they stay consistent per locale.
+    readonly property var colorModeOptions: [I18n.tr("Classic B/W"), I18n.tr("Theme Primary"), I18n.tr("Custom")]
+    function colorModeToLabel(m) {
+        if (m === "primary") return I18n.tr("Theme Primary");
+        if (m === "custom") return I18n.tr("Custom");
+        return I18n.tr("Classic B/W");
+    }
+    function labelToColorMode(l) {
+        if (l === I18n.tr("Theme Primary")) return "primary";
+        if (l === I18n.tr("Custom")) return "custom";
+        return "classic";
+    }
 
     // --- Typing metrics (roadmap item) ---
     // Optional WPM + correction-rate overlay. Only keystroke *timing* is counted;
@@ -330,7 +364,7 @@ PluginComponent {
             pluginService.savePluginData(pluginId, key, value);
             if (pluginData) pluginData[key] = value;
         } catch(e) {
-            console.log("[BongoCat] Failed to save setting:", key, e);
+            console.warn("[BongoCat] Failed to save setting:", key, e);
         }
     }
 
@@ -513,7 +547,21 @@ PluginComponent {
         });
     }
 
-    Component.onCompleted: fetchDevices()
+    // pluginData may still be empty when Component.onCompleted runs, so also
+    // migrate whenever it (re)loads. migrateColorSetting() is idempotent.
+    onPluginDataChanged: migrateColorSetting()
+    Component.onCompleted: {
+        fetchDevices();
+        migrateColorSetting();
+    }
+
+    // One-time migration of the legacy boolean so the settings page and the
+    // widget agree on the new tri-state color value.
+    function migrateColorSetting() {
+        if (pluginData && pluginData.catColorMode === undefined && pluginData.activeColor === true) {
+            saveSetting("catColorMode", "primary");
+        }
+    }
 
     // Refresh devices when popout is triggered
     function triggerPopoutWithRefresh() {
@@ -620,7 +668,7 @@ PluginComponent {
                     id: catLabel
                     font.family: bongoFont.name
                     font.pixelSize: 24 * root.catSize
-                    color: root.forceSleep ? Theme.surfaceVariantText : ((root.activeColor && !root.isWaiting) ? Theme.primary : Theme.surfaceText)
+                    color: root.forceSleep ? Theme.surfaceVariantText : root.resolvedCatColor
                     opacity: root.forceSleep ? 0.5 : 1.0
                     text: root.forceSleep ? root.sleepGlyph : (root.isWaiting ? root.sleepGlyph : (root.isBlinking && root.catState === 0 ? root.blinkGlyph : root.glyphMap[root.catState]))
                     transform: Translate { y: root.catYOffset }
@@ -714,7 +762,7 @@ PluginComponent {
                     width: parent.width
                     height: 140
                     radius: Theme.cornerRadius
-                    color: popout.isActive ? Theme.primaryContainer : Theme.surface
+                    color: (popout.isActive && root.catColorMode === "classic") ? Theme.primaryContainer : Theme.surface
                     clip: true
                     
                     // Gradient overlay
@@ -732,7 +780,9 @@ PluginComponent {
                         font.family: bongoFont.name
                         font.pixelSize: 80
                         font.letterSpacing: -2
-                        color: popout.isActive ? Theme.onPrimaryContainer : Theme.surfaceText
+                        color: root.catColorMode === "classic"
+                            ? (popout.isActive ? Theme.onPrimaryContainer : Theme.surfaceText)
+                            : root.resolvedCatColor
                         text: root.forceSleep ? root.sleepGlyph : (!popout.isActive ? root.sleepGlyph : (root.isBlinking && root.catState === 0 ? root.blinkGlyph : root.glyphMap[root.catState]))
                     }
                 }
@@ -1004,6 +1054,63 @@ PluginComponent {
                         }
                     }
 
+                    // Cat Color
+                    Column {
+                        width: parent.width
+                        spacing: 2
+
+                        StyledText {
+                            text: I18n.tr("Cat Color")
+                            font.pixelSize: Theme.fontSizeExtraSmall
+                            font.weight: Font.Medium
+                            color: Theme.surfaceVariantText
+                        }
+
+                        Row {
+                            width: parent.width
+                            height: 32
+                            spacing: Theme.spacingM
+                            DankIcon { name: "palette"; size: 18; color: Theme.primary; anchors.verticalCenter: parent.verticalCenter }
+                            DankDropdown {
+                                id: colorModeDropdown
+                                width: parent.width - 40 - (customSwatch.visible ? 40 + Theme.spacingM : 0)
+                                options: root.colorModeOptions
+                                currentValue: root.colorModeToLabel(root.catColorMode)
+                                maxPopupHeight: 200
+                                compactMode: true
+                                anchors.verticalCenter: parent.verticalCenter
+                                onValueChanged: v => root.saveSetting("catColorMode", root.labelToColorMode(v))
+                            }
+                            Rectangle {
+                                id: customSwatch
+                                visible: root.catColorMode === "custom"
+                                width: 40; height: 28; radius: Theme.cornerRadius
+                                anchors.verticalCenter: parent.verticalCenter
+                                color: root.resolvedCatColor
+                                border.color: Theme.outlineStrong
+                                border.width: 2
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        if (typeof PopoutService !== "undefined" && PopoutService && PopoutService.colorPickerModal) {
+                                            // Capture the widget root: the callback runs later in the
+                                            // modal's scope, where the enclosing-file `root` id no longer
+                                            // resolves (ReferenceError), so the save would never fire.
+                                            const widget = root;
+                                            PopoutService.colorPickerModal.selectedColor = root.resolvedCatColor;
+                                            PopoutService.colorPickerModal.pickerTitle = I18n.tr("Cat Color");
+                                            PopoutService.colorPickerModal.onColorSelectedCallback = function(selectedColor) {
+                                                widget.saveSetting("catCustomColor", selectedColor.toString());
+                                            };
+                                            PopoutService.colorPickerModal.show();
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     // Quick Toggles
                     Flow {
                         width: parent.width
@@ -1025,28 +1132,6 @@ PluginComponent {
                             }
                             StyledText {
                                 text: "Blink"
-                                font.pixelSize: Theme.fontSizeSmall
-                                color: Theme.surfaceText
-                                anchors.verticalCenter: parent.verticalCenter
-                            }
-                        }
-
-                        // Color Toggle
-                        Row {
-                            spacing: Theme.spacingS
-                            DankIcon {
-                                name: "palette"
-                                size: 22
-                                color: root.activeColor ? Theme.primary : Theme.surfaceText
-                                opacity: root.activeColor ? 1.0 : 0.4
-                                MouseArea {
-                                    anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: root.saveSetting("activeColor", !root.activeColor)
-                                }
-                            }
-                            StyledText {
-                                text: "Active Color"
                                 font.pixelSize: Theme.fontSizeSmall
                                 color: Theme.surfaceText
                                 anchors.verticalCenter: parent.verticalCenter

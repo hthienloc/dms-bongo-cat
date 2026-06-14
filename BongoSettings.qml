@@ -14,11 +14,12 @@ PluginSettings {
         SectionTitle { 
             text: I18n.tr("Appearance")
             icon: "palette" 
-            showReset: catSizePercent.isDirty || catYOffset.isDirty || activeColor.isDirty || enableBlinking.isDirty
+            showReset: catSizePercent.isDirty || catYOffset.isDirty || catColorMode.isDirty || catCustomColor.isDirty || enableBlinking.isDirty
             onResetClicked: {
                 catSizePercent.resetToDefault();
                 catYOffset.resetToDefault();
-                activeColor.resetToDefault();
+                catColorMode.resetToDefault();
+                catCustomColor.resetToDefault();
                 enableBlinking.resetToDefault();
             }
         }
@@ -51,12 +52,38 @@ PluginSettings {
 
         Separator {}
 
-        ToggleSettingPlus {
-            id: activeColor
-            settingKey: "activeColor"
-            label: I18n.tr("Use Primary Color")
-            description: I18n.tr("Apply the system primary color to the cat instead of classic black and white.")
-            defaultValue: false
+        SelectionSettingPlus {
+            id: catColorMode
+            settingKey: "catColorMode"
+            label: I18n.tr("Cat Color")
+            description: I18n.tr("Recolor the cat. Classic keeps the theme's default black and white, Primary follows the system accent, or pick a custom color.")
+            defaultValue: "classic"
+            options: [
+                { label: I18n.tr("Classic B/W"), value: "classic" },
+                { label: I18n.tr("Theme Primary"), value: "primary" },
+                { label: I18n.tr("Custom"), value: "custom" }
+            ]
+        }
+
+        Column {
+            width: parent.width
+            visible: catColorMode.value === "custom"
+            height: visible ? implicitHeight : 0
+            spacing: appearanceSection.spacing
+
+            function loadValue() {
+                catCustomColor.loadValue();
+            }
+
+            Separator {}
+
+            ColorSettingPlus {
+                id: catCustomColor
+                settingKey: "catCustomColor"
+                label: I18n.tr("Custom Color")
+                description: I18n.tr("Used when Cat Color is set to Custom.")
+                defaultValue: Theme.primary
+            }
         }
 
         Separator {}
