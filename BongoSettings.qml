@@ -14,13 +14,14 @@ PluginSettings {
         SectionTitle { 
             text: I18n.tr("Appearance")
             icon: "palette" 
-            showReset: catSizePercent.isDirty || catYOffset.isDirty || catColorMode.isDirty || catCustomColor.isDirty || enableBlinking.isDirty
+            showReset: catSizePercent.isDirty || catYOffset.isDirty || catColorMode.isDirty || catCustomColor.isDirty || enableBlinking.isDirty || classicIdle.isDirty
             onResetClicked: {
                 catSizePercent.resetToDefault();
                 catYOffset.resetToDefault();
                 catColorMode.resetToDefault();
                 catCustomColor.resetToDefault();
                 enableBlinking.resetToDefault();
+                classicIdle.resetToDefault();
             }
         }
 
@@ -43,11 +44,11 @@ PluginSettings {
             settingKey: "catYOffset"
             label: I18n.tr("Vertical Offset")
             defaultValue: 0
-            minimum: -20
-            maximum: 20
+            minimum: -10
+            maximum: 10
             unit: "px"
-            leftLabel: "-20px"
-            rightLabel: "20px"
+            leftLabel: "-10px"
+            rightLabel: "10px"
         }
 
         Separator {}
@@ -89,6 +90,16 @@ PluginSettings {
         Separator {}
 
         ToggleSettingPlus {
+            id: classicIdle
+            settingKey: "classicIdle"
+            label: I18n.tr("Classic Color on Idle")
+            description: I18n.tr("Return the cat to the classic black and white color when sleeping or idle.")
+            defaultValue: false
+        }
+
+        Separator {}
+
+        ToggleSettingPlus {
             id: enableBlinking
             settingKey: "enableBlinking"
             label: I18n.tr("Enable Blinking")
@@ -102,10 +113,11 @@ PluginSettings {
         SectionTitle { 
             text: I18n.tr("Input & Behavior")
             icon: "keyboard" 
-            showReset: waitingTimeout.isDirty || pawHoldTime.isDirty || mouseEnabled.isDirty || showMetrics.isDirty || metricsInBar.isDirty || metricsWindow.isDirty
+            showReset: waitingTimeout.isDirty || pawHoldTime.isDirty || doubleSlam.isDirty || mouseEnabled.isDirty || showMetrics.isDirty || metricsInBar.isDirty || metricsWindow.isDirty
             onResetClicked: {
                 waitingTimeout.resetToDefault();
                 pawHoldTime.resetToDefault();
+                doubleSlam.resetToDefault();
                 mouseEnabled.resetToDefault();
                 showMetrics.resetToDefault();
                 metricsInBar.resetToDefault();
@@ -139,6 +151,16 @@ PluginSettings {
             defaultValue: 0
             leftLabel: "0ms"
             rightLabel: "100ms"
+        }
+
+        Separator {}
+
+        ToggleSettingPlus {
+            id: doubleSlam
+            settingKey: "doubleSlam"
+            label: I18n.tr("Space/Enter Double Slam")
+            description: I18n.tr("Pressing Space or Enter triggers both paws to slam the table.")
+            defaultValue: true
         }
 
         Separator {}

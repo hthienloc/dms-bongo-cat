@@ -240,6 +240,8 @@ PluginComponent {
     readonly property int waitingTimeout: ((pluginData && pluginData.waitingTimeout !== undefined ? pluginData.waitingTimeout : 5)) * 1000
 
     readonly property int pawHoldTime: (pluginData && pluginData.pawHoldTime !== undefined ? pluginData.pawHoldTime : 0)
+    readonly property bool doubleSlam: (pluginData && pluginData.doubleSlam !== undefined ? pluginData.doubleSlam : true)
+    readonly property bool classicIdle: (pluginData && pluginData.classicIdle !== undefined ? pluginData.classicIdle : false)
     // --- Cat color (roadmap: cat variants) ---
     // Permanent recolor of the cat. "classic" keeps the theme's default
     // black/white look, "primary" follows the system accent, "custom" uses a
@@ -255,6 +257,8 @@ PluginComponent {
     readonly property string catCustomColor: (pluginData && pluginData.catCustomColor)
         ? pluginData.catCustomColor : "primary"
     readonly property color resolvedCatColor: {
+        if (root.classicIdle && root.isWaiting)
+            return Theme.surfaceText;
         if (catColorMode === "primary")
             return Theme.primary;
         if (catColorMode === "custom")
@@ -589,7 +593,7 @@ PluginComponent {
                 if (data.includes("EV_KEY")) {
                     const keyMatch = data.match(/(KEY_[A-Z0-9_]+)/);
                     const keyName = keyMatch ? keyMatch[1] : "";
-                    const isBigHit = keyName === "KEY_SPACE" || keyName === "KEY_ENTER" || keyName === "KEY_KPENTER";
+                    const isBigHit = root.doubleSlam && (keyName === "KEY_SPACE" || keyName === "KEY_ENTER" || keyName === "KEY_KPENTER");
                     if (data.includes("value 1")) {
                         root.recordKeystroke(keyName);
                         root.onKeyPress(isBigHit);
@@ -603,7 +607,7 @@ PluginComponent {
                 } else if (data.includes("KEYBOARD_KEY")) {
                     const keyMatch = data.match(/(KEY_[A-Z0-9_]+)/);
                     const keyName = keyMatch ? keyMatch[1] : "";
-                    const isBigHit = keyName === "KEY_SPACE" || keyName === "KEY_ENTER" || keyName === "KEY_KPENTER";
+                    const isBigHit = root.doubleSlam && (keyName === "KEY_SPACE" || keyName === "KEY_ENTER" || keyName === "KEY_KPENTER");
                     if (data.includes("pressed")) {
                         root.recordKeystroke(keyName);
                         root.onKeyPress(isBigHit);
@@ -1086,7 +1090,7 @@ PluginComponent {
                                 visible: root.catColorMode === "custom"
                                 width: 40; height: 28; radius: Theme.cornerRadius
                                 anchors.verticalCenter: parent.verticalCenter
-                                color: root.resolvedCatColor
+                                color: root.catCustomColor === "primary" ? Theme.primary : Qt.color(root.catCustomColor)
                                 border.color: Theme.outlineStrong
                                 border.width: 2
                                 MouseArea {
@@ -1098,7 +1102,7 @@ PluginComponent {
                                             // modal's scope, where the enclosing-file `root` id no longer
                                             // resolves (ReferenceError), so the save would never fire.
                                             const widget = root;
-                                            PopoutService.colorPickerModal.selectedColor = root.resolvedCatColor;
+                                            PopoutService.colorPickerModal.selectedColor = root.catCustomColor === "primary" ? Theme.primary : Qt.color(root.catCustomColor);
                                             PopoutService.colorPickerModal.pickerTitle = I18n.tr("Cat Color");
                                             PopoutService.colorPickerModal.onColorSelectedCallback = function(selectedColor) {
                                                 widget.saveSetting("catCustomColor", selectedColor.toString());
