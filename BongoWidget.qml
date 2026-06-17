@@ -9,6 +9,7 @@ import qs.Widgets
 import qs.Services
 import qs.Modules.Plugins
 import "./dms-common"
+import "./services"
 
 
 PluginComponent {
@@ -180,6 +181,8 @@ PluginComponent {
     }
 
     function onMouseButton(buttonName, pressed) {
+        if (pressed && soundOnMouse)
+            playClick(false);
         if (buttonName === "BTN_LEFT") {
             mouseLeftDown = pressed;
         } else if (buttonName === "BTN_RIGHT") {
@@ -378,6 +381,23 @@ PluginComponent {
         }
     }
 
+    // --- Audio feedback (roadmap item): optional bongo-hit sounds ---
+    // Playback lives in the BongoSoundService singleton so that on multi-monitor
+    // setups (one widget instance per bar) a keypress plays a single click, not
+    // one per monitor. Fired once per real key press — auto-repeat goes through
+    // onKeyRepeat, so a held key clicks just once, like a real keyboard.
+    readonly property bool soundEnabled: (pluginData && pluginData.soundEnabled !== undefined ? pluginData.soundEnabled : false)
+    readonly property int soundVolume: (pluginData && pluginData.soundVolume !== undefined ? pluginData.soundVolume : 60)
+    readonly property bool soundOnMouse: (pluginData && pluginData.soundOnMouse !== undefined ? pluginData.soundOnMouse : false)
+    readonly property real _soundVol: Math.max(0, Math.min(1, soundVolume / 100))
+
+    function playClick(isBigHit) {
+        if (!soundEnabled || forceSleep)
+            return;
+        BongoSoundService.volume = _soundVol;
+        BongoSoundService.play(isBigHit);
+    }
+
     readonly property var glyphMap: ["bc", "dc", "ba", "da"]
     readonly property int iconSize: Theme.iconSizeSmall
     readonly property int padding: Theme.spacingS
@@ -387,6 +407,7 @@ PluginComponent {
 
     function onKeyPress(isBigHit) {
         isWaiting = false;
+        playClick(isBigHit);
         let targetState;
         if (isBigHit) {
             targetState = 3;
@@ -553,6 +574,9 @@ PluginComponent {
     Component.onCompleted: {
         fetchDevices();
         migrateColorSetting();
+        // Instantiate the sound singleton up front so the WAVs are preloaded
+        // and the first click isn't dropped while still loading.
+        BongoSoundService.volume = _soundVol;
     }
 
     // One-time migration of the legacy boolean so the settings page and the
@@ -1132,6 +1156,28 @@ PluginComponent {
                             }
                             StyledText {
                                 text: "Blink"
+                                font.pixelSize: Theme.fontSizeSmall
+                                color: Theme.surfaceText
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                        }
+
+                        // Sound Toggle
+                        Row {
+                            spacing: Theme.spacingS
+                            DankIcon {
+                                name: root.soundEnabled ? "volume_up" : "volume_off"
+                                size: 22
+                                color: root.soundEnabled ? Theme.primary : Theme.surfaceText
+                                opacity: root.soundEnabled ? 1.0 : 0.4
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.saveSetting("soundEnabled", !root.soundEnabled)
+                                }
+                            }
+                            StyledText {
+                                text: "Sound"
                                 font.pixelSize: Theme.fontSizeSmall
                                 color: Theme.surfaceText
                                 anchors.verticalCenter: parent.verticalCenter

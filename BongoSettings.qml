@@ -200,6 +200,65 @@ PluginSettings {
     }
 
     SettingsCard {
+        id: soundSection
+        SectionTitle {
+            text: I18n.tr("Sounds")
+            icon: "volume_up"
+            showReset: soundEnabled.isDirty || soundVolume.isDirty || soundOnMouse.isDirty
+            onResetClicked: {
+                soundEnabled.resetToDefault();
+                soundVolume.resetToDefault();
+                soundOnMouse.resetToDefault();
+            }
+        }
+
+        ToggleSettingPlus {
+            id: soundEnabled
+            settingKey: "soundEnabled"
+            label: I18n.tr("Enable Sounds")
+            description: I18n.tr("Play a soft key-click sound as you type.")
+            defaultValue: false
+        }
+
+        Column {
+            width: parent.width
+            visible: soundEnabled.value
+            height: visible ? implicitHeight : 0
+            spacing: soundSection.spacing
+
+            function loadValue() {
+                soundVolume.loadValue();
+                soundOnMouse.loadValue();
+            }
+
+            Separator {}
+
+            SliderSettingPlus {
+                id: soundVolume
+                settingKey: "soundVolume"
+                label: I18n.tr("Volume")
+                minimum: 0
+                maximum: 100
+                unit: "%"
+                defaultValue: 60
+                leftLabel: "0%"
+                rightLabel: "100%"
+            }
+
+            Separator { visible: mouseEnabled.value }
+
+            ToggleSettingPlus {
+                id: soundOnMouse
+                visible: mouseEnabled.value
+                settingKey: "soundOnMouse"
+                label: I18n.tr("Mouse Clicks")
+                description: I18n.tr("Also play a click on mouse buttons.")
+                defaultValue: false
+            }
+        }
+    }
+
+    SettingsCard {
         SectionTitle { text: I18n.tr("Setup"); icon: "build" }
 
         InfoText {
