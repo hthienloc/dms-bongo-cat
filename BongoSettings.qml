@@ -204,9 +204,10 @@ PluginSettings {
         SectionTitle {
             text: I18n.tr("Sounds")
             icon: "volume_up"
-            showReset: soundEnabled.isDirty || soundVolume.isDirty || soundOnMouse.isDirty
+            showReset: soundEnabled.isDirty || soundProfile.isDirty || soundVolume.isDirty || soundOnMouse.isDirty
             onResetClicked: {
                 soundEnabled.resetToDefault();
+                soundProfile.resetToDefault();
                 soundVolume.resetToDefault();
                 soundOnMouse.resetToDefault();
             }
@@ -227,8 +228,23 @@ PluginSettings {
             spacing: soundSection.spacing
 
             function loadValue() {
+                soundProfile.loadValue();
                 soundVolume.loadValue();
                 soundOnMouse.loadValue();
+            }
+
+            Separator {}
+
+            SelectionSettingPlus {
+                id: soundProfile
+                settingKey: "soundProfile"
+                label: I18n.tr("Sound Profile")
+                description: I18n.tr("Choose the type of key-click sound.")
+                defaultValue: "bongo"
+                options: [
+                    { label: I18n.tr("Bongo"), value: "bongo" },
+                    { label: I18n.tr("Pop"), value: "pop" }
+                ]
             }
 
             Separator {}

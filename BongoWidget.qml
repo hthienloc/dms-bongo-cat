@@ -389,12 +389,14 @@ PluginComponent {
     readonly property bool soundEnabled: (pluginData && pluginData.soundEnabled !== undefined ? pluginData.soundEnabled : false)
     readonly property int soundVolume: (pluginData && pluginData.soundVolume !== undefined ? pluginData.soundVolume : 60)
     readonly property bool soundOnMouse: (pluginData && pluginData.soundOnMouse !== undefined ? pluginData.soundOnMouse : false)
+    readonly property string soundProfile: (pluginData && pluginData.soundProfile !== undefined ? pluginData.soundProfile : "bongo")
     readonly property real _soundVol: Math.max(0, Math.min(1, soundVolume / 100))
 
     function playClick(isBigHit) {
         if (!soundEnabled || forceSleep)
             return;
         BongoSoundService.volume = _soundVol;
+        BongoSoundService.soundProfile = soundProfile;
         BongoSoundService.play(isBigHit);
     }
 
@@ -577,6 +579,7 @@ PluginComponent {
         // Instantiate the sound singleton up front so the WAVs are preloaded
         // and the first click isn't dropped while still loading.
         BongoSoundService.volume = _soundVol;
+        BongoSoundService.soundProfile = soundProfile;
     }
 
     // One-time migration of the legacy boolean so the settings page and the

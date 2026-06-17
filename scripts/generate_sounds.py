@@ -16,10 +16,13 @@ license with no third-party samples. Re-run to regenerate:
 
     python3 scripts/generate_sounds.py
 
-Output: assets/sounds/{key.wav, key_alt.wav, space.wav}
-- key.wav     : higher bongo (macho)   — one paw
-- key_alt.wav : lower bongo  (hembra)  — the other paw
-- space.wav   : deeper, louder hit     — big keys (space / enter)
+Output: assets/sounds/{key.wav, key_alt.wav, space.wav, pop_key.wav, pop_key_alt.wav, pop_space.wav}
+- key.wav         : higher bongo (macho)    — one paw
+- key_alt.wav     : lower bongo  (hembra)   — the other paw
+- space.wav       : deeper, louder hit      — big keys (space / enter)
+- pop_key.wav     : bubble-pop (crisp, noise-based)  — one paw
+- pop_key_alt.wav : bubble-pop (slightly softer)     — the other paw
+- pop_space.wav   : bubble-pop (fuller air burst)    — big keys
 """
 
 import wave
@@ -81,6 +84,38 @@ def bongo(duration_s, f0, bend, tau_bend, tau_decay, slap_level, seed, peak=0.85
     return sig / maxabs * peak
 
 
+def pop(duration_s, snap_decay, air_tau, air_level, seed, peak=0.85):
+    """A bubble-pop sound — crisp, noise-based, no tonal ring.
+
+    Models a small membrane (bubble wall) bursting: a sharp noise snap
+    followed by a brief air hiss.  No sinusoidal content, so it reads as
+    "pop" rather than "drum".
+
+    snap_decay  how fast the rupture transient dies (seconds)
+    air_tau     decay time of the escaping-air noise (seconds)
+    air_level   level of the air component relative to the snap
+    """
+    rng = np.random.default_rng(seed)
+    n = int(SR * duration_s)
+    t = np.arange(n) / SR
+
+    # Snap: ultra-short noise impulse — the membrane rupturing.
+    snap = rng.standard_normal(n) * np.exp(-t / snap_decay)
+
+    # Air burst: noise that fades a bit slower — the hiss of escaping air.
+    air = rng.standard_normal(n) * np.exp(-t / air_tau) * air_level
+
+    sig = snap + air
+
+    fi = max(1, int(SR * 0.0002))
+    sig[:fi] *= np.linspace(0.0, 1.0, fi)
+    fo = max(1, int(SR * 0.002))
+    sig[-fo:] *= np.linspace(1.0, 0.0, fo)
+
+    maxabs = float(np.max(np.abs(sig))) or 1.0
+    return sig / maxabs * peak
+
+
 def write_wav(path, sig):
     data = (np.clip(sig, -1.0, 1.0) * 32767).astype("<i2")
     with wave.open(str(path), "w") as w:
@@ -105,6 +140,17 @@ def main():
     write_wav(OUT_DIR / "space.wav",
               bongo(0.26, f0=185, bend=0.55, tau_bend=0.020, tau_decay=0.140,
                     slap_level=0.38, seed=3, peak=0.92))
+
+    # Pop sounds — bubble-burst noise, no tonal ring.
+    write_wav(OUT_DIR / "pop_key.wav",
+              pop(0.030, snap_decay=0.0015, air_tau=0.007, air_level=0.55,
+                  seed=4))
+    write_wav(OUT_DIR / "pop_key_alt.wav",
+              pop(0.035, snap_decay=0.0018, air_tau=0.008, air_level=0.50,
+                  seed=5))
+    write_wav(OUT_DIR / "pop_space.wav",
+              pop(0.045, snap_decay=0.0020, air_tau=0.010, air_level=0.60,
+                  seed=6, peak=0.92))
 
 
 if __name__ == "__main__":

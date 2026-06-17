@@ -17,6 +17,10 @@ QtObject {
 
     // Set by the widget before each play; identical across monitors (shared pluginData).
     property real volume: 0.6
+    // Which sound profile to use — "bongo" or "pop".  Profiles are loaded once
+    // during startup and switched by pointer so there's no runtime I/O.
+    property string soundProfile: "bongo"
+    onSoundProfileChanged: _currentSfx = _profiles[soundProfile] || _profiles["bongo"]
 
     property double _lastPlayMs: 0
     // Calls within this window are treated as the same keypress arriving from
@@ -25,9 +29,8 @@ QtObject {
     readonly property int _dedupMs: 25
     property bool _alt: false
 
-    property var _sfxKey1: null
-    property var _sfxKey2: null
-    property var _sfxBig: null
+    property var _profiles: ({})
+    property var _currentSfx: null
     property bool _available: false
 
     function _makeSfx(file) {
@@ -39,11 +42,19 @@ QtObject {
             svc);
     }
 
+    function _loadProfile(prefix) {
+        return {
+            key1: _makeSfx(prefix + "key.wav"),
+            key2: _makeSfx(prefix + "key_alt.wav"),
+            big: _makeSfx(prefix + "space.wav")
+        };
+    }
+
     Component.onCompleted: {
         try {
-            _sfxKey1 = _makeSfx("key.wav");
-            _sfxKey2 = _makeSfx("key_alt.wav");
-            _sfxBig = _makeSfx("space.wav");
+            _profiles["bongo"] = _loadProfile("");
+            _profiles["pop"] = _loadProfile("pop_");
+            _currentSfx = _profiles["bongo"];
             _available = true;
         } catch (e) {
             console.warn("[BongoCat] QtMultimedia unavailable — key sounds disabled:", e);
@@ -51,14 +62,14 @@ QtObject {
     }
 
     function play(isBigHit) {
-        if (!_available)
+        if (!_available || !_currentSfx)
             return;
         const now = Date.now();
         if (now - _lastPlayMs < _dedupMs)
             return;
         _lastPlayMs = now;
-        // Alternate the two near-identical clicks so repeats aren't robotic.
-        const sfx = isBigHit ? _sfxBig : ((_alt = !_alt) ? _sfxKey1 : _sfxKey2);
+        _alt = !_alt;
+        const sfx = isBigHit ? _currentSfx.big : (_alt ? _currentSfx.key1 : _currentSfx.key2);
         sfx.volume = volume;
         sfx.play();
     }

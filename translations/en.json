@@ -34,6 +34,10 @@
   "Sounds": "Sounds",
   "Enable Sounds": "Enable Sounds",
   "Play a soft key-click sound as you type.": "Play a soft key-click sound as you type.",
+  "Sound Profile": "Sound Profile",
+  "Choose the type of key-click sound.": "Choose the type of key-click sound.",
+  "Bongo": "Bongo",
+  "Pop": "Pop",
   "Volume": "Volume",
   "Mouse Clicks": "Mouse Clicks",
   "Also play a click on mouse buttons.": "Also play a click on mouse buttons."
