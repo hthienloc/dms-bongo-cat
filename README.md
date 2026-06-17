@@ -24,6 +24,7 @@ git clone https://github.com/hthienloc/dms-bongo-cat ~/.config/DankMaterialShell
 - **Cat color** - Keep classic black & white, follow your theme's accent, or pick a custom color.
 - **Mouse interaction (optional)** - Paws react to clicks and scrolling (enable in settings).
 - **Typing metrics (optional)** - Live WPM and accuracy tracking with a privacy-first approach.
+- **Key sounds (optional)** - Soft click as you type, with adjustable volume.
 
 ## Usage
 
