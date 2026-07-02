@@ -55,6 +55,11 @@ If a requirement is missing, the cat shows a warning badge with setup instructio
 - [ ] **Extended Skin Library:** Support for custom skins and cat variants.
 - [ ] **Audio Feedback:** Optional mechanical keyboard sound effects.
 
+## Credits
+
+- **[@StrayRogue](https://x.com/StrayRogue)** — Creator of the original Bongo Cat artwork used by the bongocat widget
+- **[BongoCat](https://github.com/ayangweb/BongoCat)** — Desktop implementation reference
+
 ## License
 
 MIT
