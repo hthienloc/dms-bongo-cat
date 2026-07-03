@@ -65,41 +65,41 @@ DesktopPluginComponent {
         opacity: root.desktopOpacity
         border.color: root.editMode ? Theme.primary : "transparent"
         border.width: root.editMode ? 2 : 0
+    }
 
-        Item {
-            anchors.fill: parent
-            anchors.margins: Theme.spacingS
+    Item {
+        anchors.fill: parent
+        anchors.margins: Theme.spacingS
 
-            Text {
-                id: catLabel
-                visible: root.desktopSkin === "classic"
-                anchors.centerIn: parent
-                anchors.verticalCenterOffset: root.catYOffset * (Math.min(parent.width, parent.height) / 80.0)
-                font.family: bongoFont.name
-                font.pixelSize: Math.min(parent.width, parent.height) * root.catSize * 0.8
-                font.letterSpacing: -(font.pixelSize / 40.0)
-                color: globalForceSleep.value ? Theme.surfaceVariantText : root.resolvedCatColor
-                opacity: globalForceSleep.value ? 0.5 : 1.0
-                text: root._catGlyph
-            }
+        Text {
+            id: catLabel
+            visible: root.desktopSkin === "classic"
+            anchors.centerIn: parent
+            anchors.verticalCenterOffset: root.catYOffset * (Math.min(parent.width, parent.height) / 80.0)
+            font.family: bongoFont.name
+            font.pixelSize: Math.min(parent.width, parent.height) * root.catSize * 0.8
+            font.letterSpacing: -(font.pixelSize / 40.0)
+            color: globalForceSleep.value ? Theme.surfaceVariantText : root.resolvedCatColor
+            opacity: globalForceSleep.value ? 0.5 : 1.0
+            text: root._catGlyph
+        }
 
-            Image {
-                id: catImage
-                visible: root.desktopSkin === "assets"
-                anchors.centerIn: parent
-                width: Math.min(parent.width, parent.height) * root.catSize * 0.8
-                height: width
-                fillMode: Image.PreserveAspectFit
-                source: root._catStateName ? "assets/skin/" + root._catStateName + ".png" : ""
-            }
+        Image {
+            id: catImage
+            visible: root.desktopSkin === "assets"
+            anchors.centerIn: parent
+            width: Math.min(parent.width, parent.height) * root.catSize * 0.8
+            height: width
+            fillMode: Image.PreserveAspectFit
+            source: root._catStateName ? "assets/skin/" + root._catStateName + ".png" : ""
+        }
 
-            Text {
-                visible: root.desktopSkin === "assets" && catImage.status === Image.Error
-                anchors.centerIn: parent
-                text: "?"
-                font.pixelSize: 20
-                color: Theme.surfaceText
-            }
+        Text {
+            visible: root.desktopSkin === "assets" && catImage.status === Image.Error
+            anchors.centerIn: parent
+            text: "?"
+            font.pixelSize: 20
+            color: Theme.surfaceText
         }
     }
 }
