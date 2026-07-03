@@ -4,6 +4,17 @@ Watch the cat tap its paws as you type!
 
 <img src="screenshot.png" width="400" alt="Screenshot">
 
+## Requirements
+
+- `evtest` - For monitoring specific keyboard events.
+- `libinput` **CLI** - For **"All Keyboards"** mode.
+- **Input group** - User must be in the `input` group: `sudo usermod -aG input $USER`.
+
+> [!NOTE]
+> On many distros, the libinput CLI is in a separate package: `libinput-tools` (Arch/Debian/Ubuntu) or `libinput-utils` (Fedora). Logout and back in after adding your user to the input group.
+
+If a requirement is missing, the cat shows a warning badge with setup instructions.
+
 ## Install
 
 Use the DMS CLI:
@@ -35,17 +46,6 @@ git clone https://github.com/hthienloc/dms-bongo-cat ~/.config/DankMaterialShell
 
 ### Keyboard Selection
 Select a specific keyboard in settings to filter input. If a non-keyboard device appears in the list, please **open an issue**.
-
-## Requirements
-
-- `evtest` - For monitoring specific keyboard events.
-- `libinput` **CLI** - For **"All Keyboards"** mode.
-- **Input group** - User must be in the `input` group: `sudo usermod -aG input $USER`.
-
-> [!NOTE]
-> On many distros, the libinput CLI is in a separate package: `libinput-tools` (Arch/Debian/Ubuntu) or `libinput-utils` (Fedora). Logout and back in after adding your user to the input group.
-
-If a requirement is missing, the cat shows a warning badge with setup instructions.
 
 ## Roadmap / TODO
 
