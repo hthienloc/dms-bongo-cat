@@ -9,6 +9,7 @@ import qs.Widgets
 import qs.Services
 import qs.Modules.Plugins
 import "./dms-common"
+import "BongoCatUtils.js" as Utils
 
 PluginComponent {
     id: root
@@ -22,6 +23,8 @@ PluginComponent {
     PluginGlobalVar { id: globalDeviceOptions; varName: "deviceOptions"; defaultValue: ["All Keyboards (Auto)"] }
     PluginGlobalVar { id: globalDeviceMap; varName: "deviceMap"; defaultValue: ({ "All Keyboards (Auto)": "all" }) }
     PluginGlobalVar { id: globalInputBroken; varName: "inputBroken"; defaultValue: false }
+    PluginGlobalVar { id: globalInputToolMissing; varName: "inputToolMissing"; defaultValue: false }
+    PluginGlobalVar { id: globalNotInInputGroup; varName: "notInInputGroup"; defaultValue: false }
     PluginGlobalVar { id: globalMouseBroken; varName: "mouseBroken"; defaultValue: false }
     PluginGlobalVar { id: globalLiveWpm; varName: "liveWpm"; defaultValue: 0 }
     PluginGlobalVar { id: globalCleanPercent; varName: "cleanPercent"; defaultValue: 100 }
@@ -49,12 +52,7 @@ PluginComponent {
     }
     readonly property string catCustomColor: (pluginData && pluginData.catCustomColor) ? pluginData.catCustomColor : "primary"
     readonly property bool classicIdle: (pluginData && pluginData.classicIdle !== undefined ? pluginData.classicIdle : false)
-    readonly property color resolvedCatColor: {
-        if (root.classicIdle && globalIsWaiting.value) return Theme.surfaceText;
-        if (catColorMode === "primary") return Theme.primary;
-        if (catColorMode === "custom") return catCustomColor === "primary" ? Theme.primary : Qt.color(catCustomColor);
-        return Theme.surfaceText;
-    }
+    readonly property color resolvedCatColor: Utils.resolvedCatColor(catColorMode, catCustomColor, classicIdle, globalIsWaiting.value, Theme.surfaceText, Theme.primary)
     readonly property bool inputBroken: globalInputBroken.value
     readonly property bool mouseBroken: globalMouseBroken.value
 
@@ -102,12 +100,9 @@ PluginComponent {
         }
     }
 
-    readonly property var glyphMap: ["bc", "dc", "ba", "da"]
     readonly property int iconSize: Theme.iconSizeSmall
     readonly property int padding: Theme.spacingS
     readonly property int spacing: Theme.spacingXS
-    readonly property string blinkGlyph: "gh"
-    readonly property string sleepGlyph: "ef"
 
     horizontalBarPill: Component {
         Item {
@@ -150,10 +145,7 @@ PluginComponent {
                     font.letterSpacing: -(font.pixelSize / 40.0)
                     color: globalForceSleep.value ? Theme.surfaceVariantText : root.resolvedCatColor
                     opacity: globalForceSleep.value ? 0.5 : 1.0
-                    text: globalForceSleep.value ? root.sleepGlyph
-                        : (globalIsWaiting.value ? root.sleepGlyph
-                            : (globalIsBlinking.value && globalCatState.value === 0 ? root.blinkGlyph
-                                : root.glyphMap[globalCatState.value]))
+                    text: Utils.catGlyph(globalCatState.value, globalIsWaiting.value, globalIsBlinking.value, globalForceSleep.value)
                     transform: Translate { y: root.catYOffset }
                 }
 
@@ -212,8 +204,19 @@ PluginComponent {
 
                         StyledText {
                             width: parent.width
-                            visible: globalInputBroken.value
-                            text: I18n.tr("The 'libinput' CLI or 'evtest' was not found. Install the required tools to use Bongo Cat.")
+                            visible: globalInputToolMissing.value
+                            text: root.selectedDevicePath === "all"
+                                ? I18n.tr("The 'libinput' CLI was not found. Install it (Arch: libinput-tools, Debian/Ubuntu: libinput-tools, Fedora: libinput-utils) or pick a specific keyboard.")
+                                : I18n.tr("'evtest' was not found \u2014 install it to monitor a specific keyboard, or switch to Auto mode.")
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: Theme.error
+                            wrapMode: Text.Wrap
+                        }
+
+                        StyledText {
+                            width: parent.width
+                            visible: globalNotInInputGroup.value
+                            text: I18n.tr("Your user is not in the 'input' group. Run: sudo usermod -aG input $USER \u2014 then log out and back in.")
                             font.pixelSize: Theme.fontSizeSmall
                             color: Theme.error
                             wrapMode: Text.Wrap
@@ -253,10 +256,7 @@ PluginComponent {
                         color: root.catColorMode === "classic"
                             ? (popout.isActive ? Theme.onPrimaryContainer : Theme.surfaceText)
                             : root.resolvedCatColor
-                        text: globalForceSleep.value ? root.sleepGlyph
-                            : (!popout.isActive ? root.sleepGlyph
-                                : (globalIsBlinking.value && globalCatState.value === 0 ? root.blinkGlyph
-                                    : root.glyphMap[globalCatState.value]))
+                        text: Utils.catGlyph(globalCatState.value, globalIsWaiting.value, globalIsBlinking.value, globalForceSleep.value)
                     }
                 }
 

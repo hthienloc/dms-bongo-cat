@@ -6,6 +6,7 @@ import qs.Widgets
 import qs.Services
 import qs.Modules.Plugins
 import "./services"
+import "BongoCatUtils.js" as Utils
 
 PluginComponent {
     id: root
@@ -19,6 +20,8 @@ PluginComponent {
     PluginGlobalVar { id: globalDeviceOptions; varName: "deviceOptions"; defaultValue: ["All Keyboards (Auto)"] }
     PluginGlobalVar { id: globalDeviceMap; varName: "deviceMap"; defaultValue: ({ "All Keyboards (Auto)": "all" }) }
     PluginGlobalVar { id: globalInputBroken; varName: "inputBroken"; defaultValue: false }
+    PluginGlobalVar { id: globalInputToolMissing; varName: "inputToolMissing"; defaultValue: false }
+    PluginGlobalVar { id: globalNotInInputGroup; varName: "notInInputGroup"; defaultValue: false }
     PluginGlobalVar { id: globalMouseBroken; varName: "mouseBroken"; defaultValue: false }
     PluginGlobalVar { id: globalLiveWpm; varName: "liveWpm"; defaultValue: 0 }
     PluginGlobalVar { id: globalCleanPercent; varName: "cleanPercent"; defaultValue: 100 }
@@ -49,7 +52,9 @@ PluginComponent {
     }
 
     property bool inputToolMissing: false
+    onInputToolMissingChanged: globalInputToolMissing.set(inputToolMissing)
     property bool notInInputGroup: false
+    onNotInInputGroupChanged: globalNotInInputGroup.set(notInInputGroup)
     readonly property bool inputBroken: inputToolMissing || notInInputGroup
     onInputBrokenChanged: globalInputBroken.set(inputBroken)
     readonly property string requiredTool: selectedDevicePath === "all" ? "libinput" : "evtest"
@@ -221,6 +226,7 @@ PluginComponent {
     }
 
     function onKeyPress(isBigHit) {
+        pawHoldTimer.stop();
         isWaiting = false;
         playClick(isBigHit);
         let targetState;
@@ -260,6 +266,7 @@ PluginComponent {
     }
 
     function onKeyRepeat(isBigHit) {
+        pawHoldTimer.stop();
         isWaiting = false;
         let targetState;
         if (kbState !== 0) {
