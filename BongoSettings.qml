@@ -297,6 +297,48 @@ PluginSettings {
     }
 
     SettingsCard {
+        id: desktopSection
+        SectionTitle {
+            text: I18n.tr("Desktop")
+            icon: "desktop_windows"
+            showReset: desktopOpacity.isDirty || desktopSkin.isDirty
+            onResetClicked: {
+                desktopOpacity.resetToDefault();
+                desktopSkin.resetToDefault();
+            }
+        }
+
+        SliderSettingPlus {
+            id: desktopOpacity
+            settingKey: "desktop_opacity"
+            label: I18n.tr("Background Opacity")
+            description: I18n.tr("Opacity of the desktop widget background (0 = transparent, 100 = solid).")
+            minimum: 0
+            maximum: 100
+            unit: "%"
+            defaultValue: 85
+            leftLabel: "0%"
+            rightLabel: "100%"
+        }
+
+        Separator {}
+
+        SelectionSettingPlus {
+            id: desktopSkin
+            settingKey: "desktop_skin"
+            label: I18n.tr("Skin")
+            description: I18n.tr("Classic uses the built-in font glyphs. Assets loads images from assets/skin/.")
+            defaultValue: "classic"
+            options: [
+                { label: I18n.tr("Classic"), value: "classic" },
+                { label: I18n.tr("Assets"), value: "assets" }
+            ]
+        }
+
+
+    }
+
+    SettingsCard {
         SectionTitle { text: I18n.tr("Setup"); icon: "build" }
 
         InfoText {
